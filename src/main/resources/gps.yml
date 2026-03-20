@@ -1,0 +1,138 @@
+display-mode: BOSSBAR_AND_HOLOGRAM
+# Modos disponibles:
+# NONE                  = solo apunta la compass, sin HUD extra
+# BOSSBAR               = muestra solo bossbar
+# HOLOGRAM              = muestra solo holograma
+# BOSSBAR_AND_HOLOGRAM  = bossbar + holograma
+# ACTIONBAR             = muestra solo actionbar
+
+# Cada cuantos ticks se actualiza el GPS.
+# 4 ticks = 0.2 segundos
+update-interval-ticks: 4
+
+bossbar:
+  # Placeholders:
+  # <victim>   = nombre del abatido
+  # <distance> = distancia lista para mostrar, por ejemplo "34m" u "otro mundo"
+  # <arrow>    = flecha segun tu orientacion
+  format: "&b<victim> &8| &f<distance> &8| &a<arrow>"
+
+  arrows:
+    north: "↑"
+    north-east: "↗"
+    east: "→"
+    south-east: "↘"
+    south: "↓"
+    south-west: "↙"
+    west: "←"
+    north-west: "↖"
+
+  progress: 1.0
+  arrive-distance: 5.0
+  other-world-text: "otro mundo"
+
+actionbar:
+  format: "&bGPS &8| &f<distance> &8| &a<arrow>"
+
+hologram:
+  # El holograma usa una TextDisplay que sigue al jugador que rastrea.
+  # Placeholders:
+  # <victim>   = nombre del abatido
+  # <distance> = distancia al objetivo
+  # <pointer>  = puntero unico del holograma
+  format: "&a<pointer> &f<distance>"
+  pointer-text: "▲"
+  distance: 10.0
+  offset-height: 0.15
+  scale: 3.0
+  interpolation-duration: 4
+  shadowed: true
+  see-through: false
+  default-background: false
+
+gui:
+  title: "&0Nexus GPS"
+
+  # Layout del menu.
+  # # = borde
+  # . = relleno
+  # + = acento
+  # I = item de informacion
+  # T = slot de cabeza de abatido
+  # E = slot reservado para el mensaje de "sin objetivos"
+  # P = pagina anterior
+  # N = pagina siguiente
+  # C = cerrar
+  layout:
+    - "###+I+###"
+    - "#TTTTTTT#"
+    - "#TTTTTTT#"
+    - "#TTEEETT#"
+    - "#TTTTTTT#"
+    - "#P..C..N#"
+
+  items:
+    border:
+      material: GRAY_STAINED_GLASS_PANE
+      name: " "
+
+    filler:
+      material: BLACK_STAINED_GLASS_PANE
+      name: " "
+
+    accent:
+      material: CYAN_STAINED_GLASS_PANE
+      name: " "
+
+    info:
+      material: COMPASS
+      name: "&b&lNexus GPS"
+      lore:
+        - "&7Abatidos visibles: &f<targets>"
+        - "&7Pagina: &f<page>&7/&f<pages>"
+        - "&7Objetivo actual: &f<active_target>"
+        - "&8Haz click en una cabeza para seguirla."
+
+    empty:
+      material: RECOVERY_COMPASS
+      name: "&cSin objetivos abatidos"
+      lore:
+        - "&7Cuando un jugador caiga"
+        - "&7aparecera en este panel."
+
+    previous:
+      material: SPECTRAL_ARROW
+      name: "&7Pagina anterior"
+      lore:
+        - "&8Click para retroceder."
+
+    previous-disabled:
+      material: GRAY_DYE
+      name: "&8Pagina anterior"
+      lore:
+        - "&7Ya estas en la primera pagina."
+
+    next:
+      material: SPECTRAL_ARROW
+      name: "&7Pagina siguiente"
+      lore:
+        - "&8Click para avanzar."
+
+    next-disabled:
+      material: GRAY_DYE
+      name: "&8Pagina siguiente"
+      lore:
+        - "&7Ya estas en la ultima pagina."
+
+    close:
+      material: BARRIER
+      name: "&cCerrar"
+      lore:
+        - "&8Cierra este menu."
+
+  target:
+    name: "&c<victim>"
+    lore:
+      - "&7Mundo: &f<world>"
+      - "&7X: &f<x> &7Y: &f<y> &7Z: &f<z>"
+      - "&eClick para seguir"

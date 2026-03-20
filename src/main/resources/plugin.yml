@@ -1,0 +1,39 @@
+name: NexusRevive
+version: ${version}
+main: com.aquiles.nexusrevive.NexusRevivePlugin
+api-version: "1.19"
+authors: [Aquiles]
+softdepend: [Vault, WorldGuard, DeluxeCombat, PlaceholderAPI]
+commands:
+  nexusrevive:
+    description: Main command for NexusRevive
+    aliases: [nr]
+    usage: /<command>
+permissions:
+  nexusrevive.command.reload:
+    default: op
+  nexusrevive.command.down:
+    default: op
+  nexusrevive.command.revive:
+    default: op
+  nexusrevive.command.kill:
+    default: op
+  nexusrevive.command.gps:
+    default: true
+  nexusrevive.command.zone:
+    default: op
+  nexusrevive.revivable:
+    default: true
+  nexusrevive.reviver:
+    default: true
+  nexusrevive.pickable:
+    default: true
+  nexusrevive.picker:
+    default: true
+  nexusrevive.lootable:
+    default: true
+  nexusrevive.robber:
+    default: true
+  nexusrevive.downable:
+    default: true
+

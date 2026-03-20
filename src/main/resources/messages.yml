@@ -1,0 +1,181 @@
+general:
+  prefix: "&8[&b&lNexusRevive&8] &7"
+  no-permission: "&#ff5555No tienes permiso para hacer eso."
+  only-player: "&#ff5555Solo un jugador puede usar este comando."
+  player-not-found: "&#ff5555No se encontro a ese jugador conectado."
+  blocked-command: "&#ff5555Estas abatido. Usa /nr o espera ayuda."
+  reloaded: "&#55ff55Configuraciones recargadas correctamente."
+
+victim:
+  downed: |-
+    &#ff6b6bHas quedado abatido.
+    &7Necesitas ayuda para volver a ponerte en pie.
+    &8- &fMuerte final en: &c<death_delay>s
+    &8- &fVentana segura: &e<invulnerability>s
+  reconnected-downed: "&#ffaa00Sigues abatido. Te quedan &#ffffff<death_delay>s &#ffaa00para recibir ayuda."
+  start-revive: "&#55ffff<reviver> ha empezado a revivirte."
+  stop-revive: "&#aaaaaa<reviver> interrumpio el revive."
+  revived: "&#55ff55Has sido revivido con exito."
+  picked-up: "&#55ffff<picker> te esta cargando."
+  dropped: "&#ffaa00Te dejaron nuevamente en el suelo."
+
+attacker:
+  downed: "&#ff5555Has dejado abatido a &#ffffff<victim>&#ff5555."
+
+reviver:
+  start: "&#55ffffHas empezado a revivir a &#ffffff<victim>&#55ffff."
+  stop: "&#aaaaaaEl revive de &#ffffff<victim> &#aaaaaase ha cancelado."
+  success: "&#55ff55Has revivido a &#ffffff<victim>&#55ff55."
+  zone-required: "&#ff5555Ese jugador debe estar dentro de una zona de revive."
+  carry-blocked: "&#ff5555No puedes revivir a un jugador mientras lo estas cargando."
+  item-required: "&#ff5555Necesitas un item valido de revive en la mano o en la offhand."
+
+picker:
+  pickup: "&#55ffffEstas cargando a &#ffffff<victim>&#55ffff."
+  drop: "&#ffaa00Has soltado a &#ffffff<victim>&#ffaa00."
+
+loot:
+  title: "&8Saqueando a &c<victim>"
+  head-title: "&c<victim>"
+  head-lore:
+    - "&7Mundo: &f<world>"
+    - "&7X: &f<x> &7Y: &f<y> &7Z: &f<z>"
+  opened: "&#55ffffEstas saqueando a &#ffffff<victim>&#55ffff."
+  busy: "&#ff5555Ese abatido ya esta siendo saqueado por otro jugador."
+  no-space: "&#ffaa00No tienes espacio para robar ese stack."
+  blocked-reviving: "&#ff5555No puedes saquear a un abatido mientras lo estan reviviendo."
+  blocked-carried: "&#ff5555No puedes saquear a un abatido mientras lo estan cargando."
+  target-closed: "&#aaaaaaEl saqueo se cerro porque el estado del objetivo cambio."
+  robber-closed: "&#aaaaaaSesion de saqueo cerrada."
+  nothing-to-steal: "&#ffaa00Ese slot ya no tiene nada para robar."
+  cannot-loot-self: "&#ff5555No puedes saquearte a ti mismo."
+
+command:
+  help: |-
+    &b&lNexusRevive &7comandos disponibles
+    &8
+    &f/nr reload &8- &7Recarga config, mensajes, gps y zonas.
+    &f/nr down <jugador> &8- &7Fuerza el estado abatido.
+    &f/nr revive <jugador> &8- &7Revive a un jugador abatido.
+    &f/nr kill <jugador> &8- &7Finaliza a un jugador abatido.
+    &f/nr gps &8- &7Abre el rastreador de abatidos.
+    &f/nr zone wand|create|remove|list|speed &8- &7Gestiona zonas de revive.
+  downed: "&#55ff55Objetivo abatido: &#ffffff<victim>&#55ff55."
+  already-downed: "&#ffaa00No se pudo abatir a &#ffffff<victim>&#ffaa00."
+  revived: "&#55ff55Objetivo revivido: &#ffffff<victim>&#55ff55."
+  killed: "&#ff5555Objetivo finalizado: &#ffffff<victim>&#ff5555."
+  not-downed: "&#ffaa00Ese jugador no esta abatido."
+
+actionbar:
+  victim-waiting: "&cABATIDO &8| <status> &8| &fFin: &c<death_delay>s <death_delay_bar> &8| &fGracia: &e<invulnerability>s <invulnerability_bar>"
+  victim-reviving: "&bREANIMACION &8| &f<reviver> &8| &a<progress>% <progress_bar>"
+  reviver: "&bREVIVIENDO &f<victim> &8| &a<progress>% <progress_bar>"
+  suicide: "&4RINDIENDOTE &8| &c<suicide_seconds>s <suicide_bar>"
+
+bars:
+  death-delay:
+    format: "&8[<filled><empty>&8]"
+    length: 12
+    filled: "■"
+    empty: "■"
+    filled-color: "&c"
+    empty-color: "&8"
+  invulnerability:
+    format: "&8[<filled><empty>&8]"
+    length: 8
+    filled: "■"
+    empty: "■"
+    filled-color: "&e"
+    empty-color: "&8"
+  progress:
+    format: "&8[<filled><empty>&8]"
+    length: 12
+    filled: "■"
+    empty: "■"
+    filled-color: "&a"
+    empty-color: "&8"
+  suicide:
+    format: "&8[<filled><empty>&8]"
+    length: 12
+    filled: "■"
+    empty: "■"
+    filled-color: "&c"
+    empty-color: "&8"
+
+scoreboard:
+  victim-title: "&#ff7b7b&lABATIDO"
+  victim-waiting:
+    - ""
+    - " &fEstado: <status>"
+    - " &fMuerte final: &c<death_delay>s"
+    - " <death_delay_bar>"
+    - ""
+    - " &fProteccion: &e<invulnerability>s"
+    - " <invulnerability_bar>"
+  victim-reviving:
+    - ""
+    - " &fEstado: <status>"
+    - " &fReviver: &b<reviver>"
+    - " &fProgreso: &a<progress>%"
+    - " <progress_bar>"
+    - ""
+    - " &fMuerte final: &c<death_delay>s"
+    - " <death_delay_bar>"
+  reviver-title: "&#55ffff&lREANIMACION"
+  reviver-active:
+    - " &7Asistencia en curso"
+    - " &fObjetivo: &b<victim>"
+    - " &fDistancia: &e<distance>m"
+    - " &fProgreso: &a<progress>%"
+    - " <progress_bar>"
+    - " &fEstado del abatido: <status>"
+    - " &7Manten shift para completar."
+  picker-title: "&#55aaff&lTRASLADO"
+  picker-carrying:
+    - ""
+    - " &fObjetivo: &b<victim>"
+    - " &fEstado: <status>"
+    - " &fMuerte final: &c<death_delay>s"
+    - " <death_delay_bar>"
+    - " &fProteccion: &e<invulnerability>s"
+    - " &7Haz shift para soltarlo."
+
+zone:
+  help: |-
+    &b&lZonas de revive
+    &8
+    &f/nr zone wand &8- &7Te da el hacha de seleccion.
+    &f/nr zone create <nombre> &8- &7Crea una zona con la seleccion actual.
+    &f/nr zone remove <nombre> &8- &7Elimina una zona.
+    &f/nr zone list &8- &7Lista las zonas registradas.
+    &f/nr zone speed <nombre> <valor> &8- &7Cambia la velocidad de revive.
+  wand-name: "&6Zone Wand"
+  wand-lore:
+    - "&7Izquierdo en bloque: &fPos 1"
+    - "&7Derecho en bloque: &fPos 2"
+    - "&7Usa &b/nr zone create <nombre>"
+  wand-given: "&#55ff55Recibiste la &6Zone Wand&#55ff55. Usa click izquierdo y derecho sobre bloques."
+  pos1: "&#55ff55Posicion 1 guardada en <x>, <y>, <z>."
+  pos2: "&#55ff55Posicion 2 guardada en <x>, <y>, <z>."
+  need-selection: "&#ff5555Debes marcar pos1 y pos2 con la &6Zone Wand &#ff5555antes de crear la zona."
+  selection-ready: "&#55ffffSeleccion lista. Usa &#ffffff/nr zone create <nombre>&#55ffff."
+  world-mismatch: "&#ff5555Las dos posiciones deben estar en el mismo mundo."
+  created: "&#55ff55Zona creada: &#ffffff<name>&#55ff55."
+  create-failed: "&#ff5555No se pudo crear la zona &#ffffff<name>&#ff5555."
+  removed: "&#ffaa00Zona eliminada: &#ffffff<name>&#ffaa00."
+  not-found: "&#ff5555No existe esa zona."
+  list: "&#55ffffZonas registradas: &#ffffff<zones>"
+  speed-updated: "&#55ff55La zona &#ffffff<name> &#55ff55ahora usa multiplicador &#ffffff<speed>&#55ff55."
+  invalid-speed: "&#ff5555Ese multiplicador no es valido."
+
+gps:
+  started: "&#55ff55Ahora sigues a &#ffffff<victim>&#55ff55."
+  stopped: "&#ffaa00GPS desactivado."
+  arrived: "&#55ff55Has llegado al objetivo."
+  no-downed: "&#ff5555No hay jugadores abatidos en este momento."
+  target-lost: "&#ff5555Ese objetivo ya no esta abatido."
+
+hooks:
+  in-combat: "&#ff5555No puedes hacer eso mientras estas en combate."
+  region-blocked: "&#ff5555La region actual bloquea esta accion."
+  not-enough-money: "&#ff5555Necesitas &#ffffff<amount> &#ff5555para completar ese revive."

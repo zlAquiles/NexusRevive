@@ -1,0 +1,41 @@
+# Gradle
+/.gradle/
+/.gradle-user-home/
+/build/
+/out/
+/target/
+
+# IntelliJ / JetBrains
+/.idea/
+*.iml
+
+# Eclipse
+/.settings/
+.classpath
+.project
+
+# VS Code
+/.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs / temp
+*.log
+*.tmp
+*.bak
+hs_err_pid*
+replay_pid*
+
+# Local server / test runtime dirs
+/run/
+/server/
+/plugins/
+/world/
+/world_nether/
+/world_the_end/
+
+# Java artifacts
+*.class

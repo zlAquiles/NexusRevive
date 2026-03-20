@@ -3,6 +3,8 @@ version: ${version}
 main: com.aquiles.nexusrevive.NexusRevivePlugin
 api-version: "1.19"
 authors: [Aquiles]
+description: Advanced downed, revive, carry, loot, GPS, and zone system.
+website: discord.gg/WHBWBWWYDq
 softdepend: [Vault, WorldGuard, DeluxeCombat, PlaceholderAPI]
 commands:
   nexusrevive:

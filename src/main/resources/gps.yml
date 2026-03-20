@@ -1,20 +1,20 @@
 display-mode: BOSSBAR_AND_HOLOGRAM
-# Modos disponibles:
-# NONE                  = solo apunta la compass, sin HUD extra
-# BOSSBAR               = muestra solo bossbar
-# HOLOGRAM              = muestra solo holograma
-# BOSSBAR_AND_HOLOGRAM  = bossbar + holograma
-# ACTIONBAR             = muestra solo actionbar
+# Available modes:
+# NONE                  = only update the compass, no extra HUD
+# BOSSBAR               = show bossbar only
+# HOLOGRAM              = show hologram only
+# BOSSBAR_AND_HOLOGRAM  = bossbar + hologram
+# ACTIONBAR             = show actionbar only
 
-# Cada cuantos ticks se actualiza el GPS.
-# 4 ticks = 0.2 segundos
+# GPS update interval.
+# 4 ticks = 0.2 seconds
 update-interval-ticks: 4
 
 bossbar:
   # Placeholders:
-  # <victim>   = nombre del abatido
-  # <distance> = distancia lista para mostrar, por ejemplo "34m" u "otro mundo"
-  # <arrow>    = flecha segun tu orientacion
+  # <victim>   = downed player's name
+  # <distance> = formatted distance, for example "34m" or "other world"
+  # <arrow>    = arrow based on your direction
   format: "&b<victim> &8| &f<distance> &8| &a<arrow>"
 
   arrows:
@@ -29,17 +29,17 @@ bossbar:
 
   progress: 1.0
   arrive-distance: 5.0
-  other-world-text: "otro mundo"
+  other-world-text: "other world"
 
 actionbar:
   format: "&bGPS &8| &f<distance> &8| &a<arrow>"
 
 hologram:
-  # El holograma usa una TextDisplay que sigue al jugador que rastrea.
+  # The hologram uses a TextDisplay that follows the tracking player.
   # Placeholders:
-  # <victim>   = nombre del abatido
-  # <distance> = distancia al objetivo
-  # <pointer>  = puntero unico del holograma
+  # <victim>   = downed player's name
+  # <distance> = distance to the target
+  # <pointer>  = single hologram pointer
   format: "&a<pointer> &f<distance>"
   pointer-text: "▲"
   distance: 10.0
@@ -53,16 +53,16 @@ hologram:
 gui:
   title: "&0Nexus GPS"
 
-  # Layout del menu.
-  # # = borde
-  # . = relleno
-  # + = acento
-  # I = item de informacion
-  # T = slot de cabeza de abatido
-  # E = slot reservado para el mensaje de "sin objetivos"
-  # P = pagina anterior
-  # N = pagina siguiente
-  # C = cerrar
+  # Menu layout.
+  # # = border
+  # . = filler
+  # + = accent
+  # I = info item
+  # T = downed player head slot
+  # E = reserved slot for the "no targets" item
+  # P = previous page
+  # N = next page
+  # C = close
   layout:
     - "###+I+###"
     - "#TTTTTTT#"
@@ -88,51 +88,51 @@ gui:
       material: COMPASS
       name: "&b&lNexus GPS"
       lore:
-        - "&7Abatidos visibles: &f<targets>"
-        - "&7Pagina: &f<page>&7/&f<pages>"
-        - "&7Objetivo actual: &f<active_target>"
-        - "&8Haz click en una cabeza para seguirla."
+        - "&7Visible downed players: &f<targets>"
+        - "&7Page: &f<page>&7/&f<pages>"
+        - "&7Current target: &f<active_target>"
+        - "&8Click a head to start tracking."
 
     empty:
       material: RECOVERY_COMPASS
-      name: "&cSin objetivos abatidos"
+      name: "&cNo downed targets"
       lore:
-        - "&7Cuando un jugador caiga"
-        - "&7aparecera en este panel."
+        - "&7When a player goes down,"
+        - "&7they will appear in this panel."
 
     previous:
       material: SPECTRAL_ARROW
-      name: "&7Pagina anterior"
+      name: "&7Previous page"
       lore:
-        - "&8Click para retroceder."
+        - "&8Click to go back."
 
     previous-disabled:
       material: GRAY_DYE
-      name: "&8Pagina anterior"
+      name: "&8Previous page"
       lore:
-        - "&7Ya estas en la primera pagina."
+        - "&7You are already on the first page."
 
     next:
       material: SPECTRAL_ARROW
-      name: "&7Pagina siguiente"
+      name: "&7Next page"
       lore:
-        - "&8Click para avanzar."
+        - "&8Click to go forward."
 
     next-disabled:
       material: GRAY_DYE
-      name: "&8Pagina siguiente"
+      name: "&8Next page"
       lore:
-        - "&7Ya estas en la ultima pagina."
+        - "&7You are already on the last page."
 
     close:
       material: BARRIER
-      name: "&cCerrar"
+      name: "&cClose"
       lore:
-        - "&8Cierra este menu."
+        - "&8Closes this menu."
 
   target:
     name: "&c<victim>"
     lore:
-      - "&7Mundo: &f<world>"
+      - "&7World: &f<world>"
       - "&7X: &f<x> &7Y: &f<y> &7Z: &f<z>"
-      - "&eClick para seguir"
+      - "&eClick to track"

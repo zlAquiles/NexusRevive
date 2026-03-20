@@ -1,87 +1,87 @@
 # ==========================================================
-# NexusRevive - Configuracion principal
+# NexusRevive - Main configuration
 # ==========================================================
-# Este archivo controla el comportamiento general del plugin:
-# abatido, revive, cargar jugadores, sonidos y compatibilidad.
+# This file controls the general plugin behavior:
+# downed state, revive, carrying players, sounds, and hooks.
 #
-# Recomendacion:
-# 1. Cambia una sola seccion por vez.
-# 2. Guarda el archivo.
-# 3. Usa /nr reload para aplicar cambios simples.
+# Recommendation:
+# 1. Change one section at a time.
+# 2. Save the file.
+# 3. Use /nr reload to apply simple changes.
 # ==========================================================
 
 mechanics:
-  # Vida que tendra el jugador una vez entre en estado abatido.
-  # 1.0 = medio corazon, 2.0 = un corazon, etc.
+  # Health the player will have after entering the downed state.
+  # 1.0 = half a heart, 2.0 = one heart, etc.
   downed-health: 1.0
 
-  # Velocidad de movimiento del jugador abatido.
-  # 0.2 es la velocidad vanilla normal del jugador.
+  # Movement speed while the player is downed.
+  # 0.2 is normal vanilla player speed.
   downed-walk-speed: 0.06
 
-  # Tiempo total en segundos antes de que el abatido muera definitivamente.
+  # Total time in seconds before the downed player dies permanently.
   death-delay-seconds: 75
 
-  # Segundos en los que el abatido no puede ser rematado despues de caer.
+  # Seconds during which a newly downed player cannot be finished off.
   invulnerability-seconds: 15
 
-  # Vida que tendra el jugador al ser revivido.
+  # Health the player will have after being revived.
   revived-health: 6.0
 
-  # Delay en ticks antes de aplicar la pose de abatido.
-  # 20 ticks = 1 segundo.
-  # Sirve para que se vea el impacto antes de caer al suelo.
+  # Delay in ticks before applying the downed pose.
+  # 20 ticks = 1 second.
+  # Useful to show the hit impact before dropping to the ground.
   downed-entry-delay-ticks: 4
 
-  # Knockback horizontal al entrar en estado abatido.
-  # Subelo si quieres una caida mas dramatica.
+  # Horizontal knockback when entering the downed state.
+  # Increase this for a more dramatic fall.
   downed-entry-knockback-horizontal: 0.16
 
-  # Empuje vertical al entrar en estado abatido.
-  # Valores bajos hacen una caida mas natural.
+  # Vertical knockback when entering the downed state.
+  # Lower values make the fall look more natural.
   downed-entry-knockback-vertical: 0.08
 
-  # Que hacer cuando se termina el contador del abatido:
-  # KILL   = muere definitivamente
-  # REVIVE = se levanta automaticamente
+  # What should happen when the downed timer runs out:
+  # KILL   = die permanently
+  # REVIVE = stand back up automatically
   death-action: KILL
 
-  # Si el jugador se desconecta mientras esta abatido:
-  # true  = muere/limpia su estado
-  # false = conserva el estado abatido al reconectar
+  # If the player disconnects while downed:
+  # true  = dies / state is cleared
+  # false = keeps the downed state on reconnect
   kill-on-disconnect: true
 
-  # Si al morir definitivamente estando abatido se oculta el death message.
+  # Hide the death message when the player dies permanently while downed.
   disable-death-message-while-downed: true
 
 revive:
-  # Tiempo en segundos que tarda el revive completo.
+  # Time in seconds required to complete a revive.
   duration-seconds: 10
 
-  # Si el reviver debe mantener shift para seguir reviviendo.
+  # Whether the reviver must keep sneaking to continue reviving.
   require-sneak: true
 
-  # Permite que un jugador abatido se reviva a si mismo.
+  # Allow a downed player to revive themselves.
   allow-self-revive: false
 
-  # Distancia maxima para iniciar el revive.
+  # Maximum distance to start a revive.
   start-distance: 2.0
 
-  # Si el reviver se aleja mas de esta distancia, el revive se cancela.
+  # If the reviver moves farther than this, the revive is cancelled.
   cancel-distance: 4.5
 
-  # Donde se puede revivir:
-  # ANYWHERE      = en cualquier sitio
-  # ONLY_IN_ZONES = solo dentro de zonas creadas con /nr zone
+  # Where players can be revived:
+  # ANYWHERE      = anywhere
+  # ONLY_IN_ZONES = only inside zones created with /nr zone
   zone-mode: ANYWHERE
 
-  # Si las zonas de revive modifican la velocidad del revive.
-  # true  = el multiplicador de la zona afecta el tiempo
-  # false = todas las zonas reviven a la misma velocidad
+  # Whether revive zones affect revive speed.
+  # true  = the zone speed multiplier affects revive duration
+  # false = every zone revives at the same speed
   zones-affect-speed: true
 
   auto-revive-finish-effect:
-    # Efecto visual/sonoro que se reproduce al completar un auto-revive en zona.
+    # Visual/audio effect played when an auto-revive finishes inside a zone.
     enabled: true
 
     primary-particle:
@@ -109,14 +109,14 @@ revive:
       pitch: 1.15
 
   required-item:
-    # Si hace falta llevar un item valido para poder revivir.
+    # Require a valid item in hand or offhand to revive.
     enabled: false
 
-    # Si al completar el revive se consume 1 item del stack usado.
+    # Consume 1 item from the matching stack on successful revive.
     consume-on-success: true
 
-    # NexusRevive revisa la main hand y la offhand.
-    # Si cualquiera coincide con una regla, permite el revive.
+    # NexusRevive checks both main hand and offhand.
+    # If either hand matches a rule, the revive is allowed.
     items:
       revive_kit:
         material: PAPER
@@ -125,66 +125,66 @@ revive:
         name_contains: "&eRevive Kit"
 
 carry:
-  # Si los jugadores abatidos pueden cargarse encima.
+  # Whether downed players can be carried.
   enabled: true
 
-  # Si el jugador que carga recibe dano:
-  # true  = suelta al abatido
-  # false = sigue cargandolo
+  # If the carrier takes damage:
+  # true  = drop the downed player
+  # false = keep carrying
   drop-on-picker-damage: false
 
-  # Si el contador de muerte se pausa mientras lo estan cargando.
+  # Pause the death timer while the player is being carried.
   stop-death-timer-while-carried: false
 
-  # Si el abatido puede bajarse solo del jugador que lo carga.
+  # Allow the downed player to dismount by themselves.
   allow-downed-dismount: false
 
 loot:
-  # Si se permite saquear a jugadores abatidos con shift + click derecho.
+  # Allow looting downed players with shift + right click.
   enabled: true
 
-  # Debug temporal del sistema de saqueo.
-  # true  = muestra logs detallados en consola al abrir/clickear/cerrar el menu
-  # false = oculta esos logs
+  # Temporary debug for the loot system.
+  # true  = prints detailed logs when opening/clicking/closing the menu
+  # false = hides those logs
   debug: false
 
-  # Si el saqueo exige mantener shift al hacer click derecho.
+  # Require sneaking while right-clicking to open loot.
   require-sneak: true
 
-  # Si solo un jugador puede tener abierta la sesion de saqueo por victima.
-  # Recomendado: true, para mantener el flujo mas seguro y predecible.
+  # Allow only one player to keep a loot session open per victim.
+  # Recommended: true, for a safer and more predictable flow.
   single-robber-lock: true
 
-  # Si se permite saquear a un abatido mientras alguien lo esta reviviendo.
+  # Allow looting a downed player while someone is reviving them.
   allow-while-reviving: false
 
-  # Si se permite saquear a un abatido mientras esta cargado por otro jugador.
+  # Allow looting a downed player while someone is carrying them.
   allow-while-carried: false
 
-  # Si se permite saquear el inventario principal y hotbar del abatido.
+  # Allow looting the main inventory and hotbar.
   allow-main-inventory: true
 
-  # Si se permite saquear las piezas de armadura del abatido.
+  # Allow looting armor slots.
   allow-armor: true
 
-  # Si se permite saquear la offhand del abatido.
+  # Allow looting the offhand slot.
   allow-offhand: true
 
 persistence:
-  # Si NexusRevive debe guardar states.yml en disco.
-  # true  = conserva abatidos y muertes pendientes entre reinicios
-  # false = no carga ni guarda states.yml
+  # Save states.yml to disk.
+  # true  = keeps downed states and pending deaths across restarts
+  # false = does not load or save states.yml
   enabled: false
 
 updater:
-  # Si NexusRevive debe comprobar actualizaciones al iniciar.
-  # La URL del updater esta fija en el codigo y no se puede editar desde aqui.
+  # Check for updates on startup.
+  # The update URL is hardcoded in the plugin and cannot be edited here.
   enabled: true
 
 sounds:
-  # Sonido que se reproduce mientras el revive esta en progreso.
-  # cooldown-ticks evita que se repita demasiado seguido.
-  # 20 ticks = 1 segundo.
+  # Sound played while revive progress is happening.
+  # cooldown-ticks prevents it from repeating too often.
+  # 20 ticks = 1 second.
   reliving:
     enabled: true
     sound: BLOCK_NOTE_BLOCK_HARP
@@ -192,7 +192,7 @@ sounds:
     pitch: 1.0
     cooldown-ticks: 20
 
-  # Sonido al empezar a revivir.
+  # Sound played when a revive starts.
   start-reliving:
     enabled: true
     sound: BLOCK_NOTE_BLOCK_HARP
@@ -200,7 +200,7 @@ sounds:
     pitch: 1.0
     cooldown-ticks: 0
 
-  # Sonido al cancelar o interrumpir el revive.
+  # Sound played when a revive is stopped or cancelled.
   stop-reliving:
     enabled: true
     sound: BLOCK_NOTE_BLOCK_HARP
@@ -208,7 +208,7 @@ sounds:
     pitch: 1.0
     cooldown-ticks: 0
 
-  # Sonido al completar el revive.
+  # Sound played when a revive completes.
   success-relive:
     enabled: true
     sound: BLOCK_NOTE_BLOCK_HARP
@@ -217,12 +217,13 @@ sounds:
     cooldown-ticks: 0
 
 downed-effects:
-  # Si NexusRevive debe aplicar efectos de pocion mientras el jugador este abatido.
-  # Estos efectos se eliminan automaticamente al revivir, morir o salir del estado abatido.
+  # Apply potion effects while the player is downed.
+  # These effects are removed automatically when the player revives,
+  # dies, or leaves the downed state.
   enabled: true
 
-  # Puedes borrar, editar o anadir entradas.
-  # El campo "type" acepta nombres vanilla como:
+  # You can remove, edit, or add entries here.
+  # The "type" field accepts vanilla effect names such as:
   # SLOWNESS, WEAKNESS, DARKNESS, BLINDNESS, SLOW_FALLING, etc.
   effects:
     slowness:
@@ -239,7 +240,7 @@ downed-effects:
       particles: false
       icon: false
 
-    # Ejemplo opcional:
+    # Optional example:
     # darkness:
     #   type: DARKNESS
     #   amplifier: 0
@@ -248,233 +249,233 @@ downed-effects:
     #   icon: false
 
 suicide:
-  # Si el abatido puede suicidarse manteniendo shift.
+  # Allow the downed player to commit suicide by holding shift.
   enabled: true
 
-  # Cuantos segundos debe mantener shift para suicidarse.
+  # How many seconds the player must hold shift.
   hold-seconds: 5
 
 restrictions:
   worlds:
-    # Control por mundos:
-    # BLACKLIST = funciona en todos menos en los de la lista
-    # WHITELIST = solo funciona en los de la lista
+    # World control:
+    # BLACKLIST = works in every world except the listed ones
+    # WHITELIST = works only in the listed worlds
     mode: BLACKLIST
 
-    # Lista de mundos afectados por el modo anterior.
+    # World list used by the mode above.
     list:
       - example_world_disabled
 
-  # Causas de dano ignoradas por el sistema de abatido.
-  # Ejemplo: si pones VOID, el vacio matara normal.
+  # Damage causes ignored by the downed system.
+  # Example: if you add VOID, falling into the void will kill normally.
   ignored-damage-causes:
     - VOID
 
 downed-interactions:
-  # Si el abatido puede moverse.
+  # Allow movement while downed.
   allow-move: true
 
-  # Si el abatido puede interactuar con bloques en general.
+  # Allow general block interaction while downed.
   allow-interact: false
 
-  # Si el abatido puede interactuar con entidades.
+  # Allow entity interaction while downed.
   allow-entity-interact: false
 
-  # Si el abatido puede romper bloques.
+  # Allow breaking blocks while downed.
   allow-block-break: false
 
-  # Si el abatido puede colocar bloques.
+  # Allow placing blocks while downed.
   allow-block-place: false
 
-  # Si el abatido puede usar teleports/comandos que teletransporten.
+  # Allow teleports or teleport-like commands while downed.
   allow-teleport: false
 
-  # Si el abatido puede disparar o lanzar proyectiles.
+  # Allow shooting / throwing projectiles while downed.
   allow-projectiles: false
 
-  # Si el abatido puede comer o beber items consumibles.
+  # Allow eating or drinking consumable items while downed.
   allow-consume: false
 
-  # Si el abatido puede mover items en su inventario principal y hotbar.
-  # Este ajuste no controla offhand ni armadura: esos slots tienen su propio toggle abajo.
+  # Allow moving items in the main inventory and hotbar while downed.
+  # This does not control offhand or armor slots.
   allow-inventory: false
 
-  # Si el abatido puede usar o intercambiar el slot de la mano secundaria.
+  # Allow using or swapping the offhand slot while downed.
   allow-offhand: false
 
-  # Si el abatido puede cambiar el casco mientras esta abatido.
+  # Allow changing the helmet slot while downed.
   allow-helmet: false
 
-  # Si el abatido puede cambiar el peto mientras esta abatido.
+  # Allow changing the chestplate slot while downed.
   allow-chestplate: false
 
-  # Si el abatido puede cambiar las grebas mientras esta abatido.
+  # Allow changing the leggings slot while downed.
   allow-leggings: false
 
-  # Si el abatido puede cambiar las botas mientras esta abatido.
+  # Allow changing the boots slot while downed.
   allow-boots: false
 
-  # Si el abatido puede tirar objetos.
+  # Allow dropping items while downed.
   allow-item-drop: false
 
-  # Si el abatido puede recoger objetos.
+  # Allow picking up items while downed.
   allow-item-pickup: false
 
-  # Si el abatido puede usar elytra.
+  # Allow using elytra while downed.
   allow-gliding: false
 
-  # Si el abatido puede recibir dano por caida.
+  # Allow taking fall damage while downed.
   allow-fall-damage: false
 
-  # Distancia maxima de caida para permitir estado abatido.
-  # -1 = sin limite
-  # Si cae mas que este valor, no entra en abatido.
+  # Maximum fall distance allowed for downing.
+  # -1 = unlimited
+  # If the player falls farther than this, they will not enter downed state.
   max-fall-distance: -1
 
 commands:
-  # Control de comandos mientras el jugador esta abatido.
-  # BLACKLIST = bloquea solo los comandos listados
-  # WHITELIST = permite solo los comandos listados
+  # Command control while the player is downed.
+  # BLACKLIST = blocks only the listed commands
+  # WHITELIST = allows only the listed commands
   #
-  # /nr y /nexusrevive siempre siguen permitidos aparte.
+  # /nr and /nexusrevive are always allowed separately.
   mode: BLACKLIST
   list: []
 
 hooks:
   vault:
-    # Hook con Vault para cobrar por el revive.
-    # Solo funciona si Vault y una economia estan instalados.
+    # Vault hook for revive cost.
+    # Works only if Vault and an economy plugin are installed.
     enabled: true
 
-    # Coste del revive.
-    # 0.0 = gratis
+    # Revive cost.
+    # 0.0 = free
     revive-cost: 0.0
 
   worldguard:
-    # Hook con WorldGuard.
+    # WorldGuard hook.
     enabled: true
 
-    # NexusRevive registra estas flags de region:
+    # NexusRevive registers these region flags:
     # nexus-revive
     # nexus-revive-carry
     # nexus-revive-loot
     #
     # nexus-revive:
-    # Controla solo la accion de revivir.
+    # Controls only reviving.
     #
     # nexus-revive-carry:
-    # Controla solo la accion de cargar abatidos.
+    # Controls only carrying downed players.
     #
     # nexus-revive-loot:
-    # Controla solo la accion de saquear abatidos.
+    # Controls only looting downed players.
     #
-    # Si una flag esta en ALLOW, la accion queda permitida ahi.
-    # Si una flag esta en DENY, la accion queda bloqueada.
-    # Si una flag no esta definida, NexusRevive no bloquea esa accion por WorldGuard.
+    # If a flag is ALLOW, the action is allowed there.
+    # If a flag is DENY, the action is blocked there.
+    # If a flag is not defined, NexusRevive will not block that action by WorldGuard.
     #
-    # Ejemplo:
+    # Example:
     # /rg flag <region> nexus-revive allow
     # /rg flag <region> nexus-revive-carry deny
     # /rg flag <region> nexus-revive-loot deny
 
   deluxecombat:
-    # Hook con DeluxeCombat.
+    # DeluxeCombat hook.
     enabled: true
 
-    # Si se permite revivir mientras alguno de los jugadores esta en combate.
+    # Allow reviving while one of the players is in combat.
     allow-revive-in-combat: true
 
-    # Si se permite cargar abatidos mientras alguno esta en combate.
+    # Allow carrying while one of the players is in combat.
     allow-carry-in-combat: false
 
-    # Si se respeta la proteccion PvP de DeluxeCombat al intentar abatir.
+    # Respect DeluxeCombat PvP protection when trying to down players.
     respect-pvp-protection: true
 
 scoreboard:
-  # Si se muestra un scoreboard personal del sistema NexusRevive.
+  # Show a personal NexusRevive scoreboard.
   enabled: true
 
-  # Cada cuantos ticks se refresca el contenido.
-  # 10 ticks = 0.5 segundos.
+  # Update interval in ticks.
+  # 10 ticks = 0.5 seconds.
   update-interval-ticks: 10
 
-  # Si el abatido debe ver su propio scoreboard de estado.
+  # Show a scoreboard for the downed player.
   show-for-downed: true
 
-  # Si el jugador que esta reviviendo debe ver un scoreboard de progreso.
+  # Show a scoreboard for the player who is reviving.
   show-for-reviver: true
 
-  # Si el jugador que esta cargando a un abatido debe ver un scoreboard de traslado.
+  # Show a scoreboard for the player carrying a downed target.
   show-for-picker: true
 
 events:
-  # Sistema de eventos por comandos.
-  # Cada entrada acepta una lista de comandos.
+  # Command-based event system.
+  # Each entry accepts a list of commands.
   #
-  # Remitentes soportados:
-  # [console] = ejecuta como consola
-  # [victim]  = ejecuta como el abatido
-  # [attacker]= ejecuta como el atacante si existe
-  # [reviver] = ejecuta como quien revive
-  # [picker]  = ejecuta como quien carga
+  # Supported senders:
+  # [console] = run as console
+  # [victim]  = run as the downed player
+  # [attacker]= run as the attacker if present
+  # [reviver] = run as the reviver
+  # [picker]  = run as the carrier
   #
-  # Placeholders disponibles:
+  # Available placeholders:
   # <victim> <attacker> <reviver> <picker>
   # <world> <x> <y> <z>
   #
-  # Ejemplo:
-  # - "[console] broadcast &c<victim> ha quedado abatido en <world> (<x>, <y>, <z>)"
+  # Example:
+  # - "[console] broadcast &c<victim> has been downed in <world> (<x>, <y>, <z>)"
 
   player-downed:
-    # Se dispara cuando un jugador entra en estado abatido.
+    # Fired when a player enters the downed state.
     enabled: false
     commands:
-      - "[console] say <victim> ha quedado abatido."
+      - "[console] say <victim> has been downed."
 
   player-start-revive:
-    # Se dispara cuando alguien empieza a revivir a un abatido.
+    # Fired when someone starts reviving a downed player.
     enabled: false
     commands:
-      - "[console] say <reviver> ha empezado a revivir a <victim>."
+      - "[console] say <reviver> started reviving <victim>."
 
   player-stop-revive:
-    # Se dispara cuando un revive se interrumpe o cancela.
+    # Fired when a revive is interrupted or cancelled.
     enabled: false
     commands:
-      - "[console] say Se cancelo el revive de <victim>."
+      - "[console] say The revive of <victim> was cancelled."
 
   player-revived:
-    # Se dispara cuando el revive se completa con exito.
+    # Fired when a revive completes successfully.
     enabled: false
     commands:
-      - "[console] say <victim> ha sido revivido."
+      - "[console] say <victim> has been revived."
 
   player-picked-up:
-    # Se dispara cuando un jugador carga a un abatido.
+    # Fired when a player carries a downed target.
     enabled: false
     commands:
-      - "[console] say <picker> esta cargando a <victim>."
+      - "[console] say <picker> is carrying <victim>."
 
   player-dropped:
-    # Se dispara cuando el abatido es soltado al suelo.
+    # Fired when a carried downed target is dropped.
     enabled: false
     commands:
-      - "[console] say <picker> solto a <victim>."
+      - "[console] say <picker> dropped <victim>."
 
   player-final-death:
-    # Se dispara cuando el abatido muere definitivamente.
+    # Fired when a downed player dies permanently.
     enabled: false
     commands:
-      - "[console] say <victim> murio definitivamente."
+      - "[console] say <victim> died permanently."
 
 # ==========================================================
 # PlaceholderAPI
 # ==========================================================
-# Si tienes PlaceholderAPI instalado, NexusRevive registra
-# placeholders internos con el identificador:
+# If PlaceholderAPI is installed, NexusRevive registers
+# internal placeholders with the identifier:
 # %nexusrevive_<placeholder>%
 #
-# Disponibles:
+# Available:
 # %nexusrevive_status%
 # %nexusrevive_death_delay%
 # %nexusrevive_invulnerability%
@@ -490,7 +491,7 @@ events:
 # %nexusrevive_invulnerability_bar%
 # %nexusrevive_progress_bar%
 #
-# Nota:
-# Si persistence.enabled esta en true, NexusRevive guarda
-# estados temporales en states.yml para soportar
-# reconexiones, reinicios y muertes pendientes.
+# Note:
+# If persistence.enabled is true, NexusRevive saves
+# temporary states in states.yml to support reconnects,
+# restarts, and pending deaths.

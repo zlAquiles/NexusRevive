@@ -144,6 +144,26 @@ public record PluginSettings(
                                 config.getBoolean("hooks.deluxecombat.allow-revive-in-combat", true),
                                 config.getBoolean("hooks.deluxecombat.allow-carry-in-combat", false),
                                 config.getBoolean("hooks.deluxecombat.respect-pvp-protection", true)
+                        ),
+                        new CmiHook(
+                                config.getBoolean("hooks.cmi.enabled", true),
+                                config.getBoolean("hooks.cmi.respect-god-mode", true),
+                                config.getBoolean("hooks.cmi.respect-vanish", true)
+                        ),
+                        new EssentialsHook(
+                                config.getBoolean("hooks.essentials.enabled", true),
+                                config.getBoolean("hooks.essentials.respect-god-mode", true),
+                                config.getBoolean("hooks.essentials.respect-vanish", true)
+                        ),
+                        new SuperVanishHook(
+                                config.getBoolean("hooks.supervanish.enabled", true),
+                                config.getBoolean("hooks.supervanish.respect-vanish", true)
+                        ),
+                        new QualityArmoryHook(
+                                config.getBoolean("hooks.qualityarmory.enabled", true)
+                        ),
+                        new WeaponMechanicsHook(
+                                config.getBoolean("hooks.weaponmechanics.enabled", true)
                         )
                 ),
                 new Scoreboard(
@@ -468,7 +488,12 @@ public record PluginSettings(
     public record Hooks(
             VaultHook vault,
             WorldGuardHook worldGuard,
-            DeluxeCombatHook deluxeCombat
+            DeluxeCombatHook deluxeCombat,
+            CmiHook cmi,
+            EssentialsHook essentials,
+            SuperVanishHook superVanish,
+            QualityArmoryHook qualityArmory,
+            WeaponMechanicsHook weaponMechanics
     ) {
     }
 
@@ -488,6 +513,36 @@ public record PluginSettings(
             boolean allowReviveInCombat,
             boolean allowCarryInCombat,
             boolean respectPvpProtection
+    ) {
+    }
+
+    public record CmiHook(
+            boolean enabled,
+            boolean respectGodMode,
+            boolean respectVanish
+    ) {
+    }
+
+    public record EssentialsHook(
+            boolean enabled,
+            boolean respectGodMode,
+            boolean respectVanish
+    ) {
+    }
+
+    public record SuperVanishHook(
+            boolean enabled,
+            boolean respectVanish
+    ) {
+    }
+
+    public record QualityArmoryHook(
+            boolean enabled
+    ) {
+    }
+
+    public record WeaponMechanicsHook(
+            boolean enabled
     ) {
     }
 

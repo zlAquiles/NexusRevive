@@ -69,6 +69,7 @@ public final class LootService {
                 case REGION_BLOCKED -> "hooks.region-blocked";
                 case IN_COMBAT -> "hooks.in-combat";
                 case NO_MONEY -> "hooks.not-enough-money";
+                case TARGET_HIDDEN -> "hooks.target-hidden";
                 default -> "general.no-permission";
             });
             return true;

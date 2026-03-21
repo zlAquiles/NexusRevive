@@ -73,7 +73,7 @@ public final class GpsService {
 
     public Inventory buildMenu(Player viewer, int requestedPage) {
         GpsSettings.Gui gui = plugin.getGpsSettings().gui();
-        List<Player> downedPlayers = getDownedPlayers();
+        List<Player> downedPlayers = getDownedPlayers(viewer);
         int pageSize = Math.max(1, gui.targetSlots().size());
         int totalPages = Math.max(1, (int) Math.ceil(downedPlayers.size() / (double) pageSize));
         int page = Math.max(0, Math.min(requestedPage, totalPages - 1));
@@ -103,7 +103,8 @@ public final class GpsService {
 
     public void startTracking(Player tracker, UUID targetId) {
         Player target = Bukkit.getPlayer(targetId);
-        if (target == null || !plugin.getDownedService().isDowned(target)) {
+        if (target == null || !plugin.getDownedService().isDowned(target)
+                || !plugin.getCompatibilityService().canSeeDowned(tracker, target)) {
             plugin.getMessages().send(tracker, "gps.target-lost");
             stopTracking(tracker);
             return;
@@ -136,10 +137,11 @@ public final class GpsService {
         }
     }
 
-    public List<Player> getDownedPlayers() {
+    public List<Player> getDownedPlayers(Player viewer) {
         return plugin.getDownedService().getDownedPlayers().keySet().stream()
                 .map(Bukkit::getPlayer)
                 .filter(player -> player != null && player.isOnline())
+                .filter(player -> viewer == null || plugin.getCompatibilityService().canSeeDowned(viewer, player))
                 .sorted(Comparator.comparing(Player::getName, String.CASE_INSENSITIVE_ORDER))
                 .toList();
     }
@@ -158,7 +160,9 @@ public final class GpsService {
         for (Map.Entry<UUID, UUID> entry : new ArrayList<>(trackedTargets.entrySet())) {
             Player tracker = Bukkit.getPlayer(entry.getKey());
             Player target = Bukkit.getPlayer(entry.getValue());
-            if (tracker == null || target == null || !tracker.isOnline() || !target.isOnline() || !plugin.getDownedService().isDowned(target)) {
+            if (tracker == null || target == null || !tracker.isOnline() || !target.isOnline()
+                    || !plugin.getDownedService().isDowned(target)
+                    || !plugin.getCompatibilityService().canSeeDowned(tracker, target)) {
                 if (tracker != null) {
                     plugin.getMessages().send(tracker, "gps.target-lost");
                     stopTracking(tracker);

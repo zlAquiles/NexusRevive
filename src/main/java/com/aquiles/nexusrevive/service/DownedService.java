@@ -481,6 +481,7 @@ public final class DownedService {
         return downedPlayers.keySet().stream()
                 .map(uuid -> Bukkit.getPlayer(uuid))
                 .filter(target -> target != null && target.isOnline() && !target.equals(player))
+                .filter(target -> plugin.getCompatibilityService().canSeeDowned(player, target))
                 .filter(target -> target.getWorld().equals(player.getWorld()))
                 .filter(target -> target.getLocation().distance(player.getLocation()) <= plugin.getPluginSettings().revive().startDistance())
                 .min(Comparator.comparingDouble(target -> target.getLocation().distanceSquared(player.getLocation())));
@@ -925,6 +926,7 @@ public final class DownedService {
                     "hooks.not-enough-money",
                     Map.of("amount", plugin.getCompatibilityService().reviveCostText())
             );
+            case TARGET_HIDDEN -> plugin.getMessages().send(player, "hooks.target-hidden");
             default -> {
             }
         }
@@ -1156,15 +1158,15 @@ public final class DownedService {
 
     private String downedStatus(DownedPlayer downed) {
         if (downed.getCarrierId() != null) {
-            return "&3CARGADO";
+            return plugin.getMessages().string("status.carried", "&3CARRIED");
         }
         if (downed.isAutoReviving()) {
-            return "&bAUTO-REVIVE";
+            return plugin.getMessages().string("status.auto-revive", "&bAUTO-REVIVE");
         }
         if (downed.getInvulnerabilitySeconds() > 0) {
-            return "&ePROTEGIDO";
+            return plugin.getMessages().string("status.protected", "&ePROTECTED");
         }
-        return "&cCRITICO";
+        return plugin.getMessages().string("status.critical", "&cCRITICAL");
     }
 
     private void playAutoReviveFinishEffect(Player player) {

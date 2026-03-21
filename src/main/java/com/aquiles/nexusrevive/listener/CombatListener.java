@@ -38,8 +38,8 @@ public final class CombatListener implements Listener {
             return;
         }
 
-        Player attacker = event instanceof EntityDamageByEntityEvent byEntity && byEntity.getDamager() instanceof Player player
-                ? player
+        Player attacker = event instanceof EntityDamageByEntityEvent byEntity
+                ? plugin.getCompatibilityService().resolveAttacker(byEntity)
                 : null;
 
         if (plugin.getDownedService().tryDown(victim, attacker, event.getCause(), event.getFinalDamage())) {

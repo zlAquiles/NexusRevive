@@ -391,6 +391,46 @@ hooks:
     # Respect DeluxeCombat PvP protection when trying to down players.
     respect-pvp-protection: true
 
+  cmi:
+    # CMI hook.
+    enabled: true
+
+    # Prevent players protected by CMI god mode from being downed.
+    respect-god-mode: true
+
+    # Hide vanished CMI players from GPS and downed interactions
+    # unless the viewer can already see them.
+    respect-vanish: true
+
+  essentials:
+    # EssentialsX hook.
+    enabled: true
+
+    # Prevent players protected by Essentials god mode from being downed.
+    respect-god-mode: true
+
+    # Hide vanished Essentials players from GPS and downed interactions
+    # unless the viewer can already see them.
+    respect-vanish: true
+
+  supervanish:
+    # SuperVanish hook.
+    enabled: true
+
+    # Hide vanished SuperVanish players from GPS and downed interactions
+    # unless the viewer can already see them.
+    respect-vanish: true
+
+  qualityarmory:
+    # QualityArmory hook.
+    # Improves attacker detection for non-vanilla weapon damage.
+    enabled: true
+
+  weaponmechanics:
+    # WeaponMechanics hook.
+    # Improves attacker detection for custom weapon damage.
+    enabled: true
+
 scoreboard:
   # Show a personal NexusRevive scoreboard.
   enabled: true

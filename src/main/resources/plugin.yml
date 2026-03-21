@@ -3,9 +3,9 @@ version: ${version}
 main: com.aquiles.nexusrevive.NexusRevivePlugin
 api-version: "1.19"
 authors: [Aquiles]
-description: Advanced downed, revive, carry, loot, GPS, and zone system.
-website: discord.gg/WHBWBWWYDq
-softdepend: [Vault, WorldGuard, DeluxeCombat, PlaceholderAPI]
+description: Advanced downed, revive, carry, loot, GPS, and zone system for Paper servers.
+website: https://discord.gg/WHBWBWWYDq
+softdepend: [Vault, WorldGuard, DeluxeCombat, PlaceholderAPI, CMI, Essentials, EssentialsX, SuperVanish, QualityArmory, WeaponMechanics]
 commands:
   nexusrevive:
     description: Main command for NexusRevive
@@ -38,4 +38,3 @@ permissions:
     default: true
   nexusrevive.downable:
     default: true
-

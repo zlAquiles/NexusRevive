@@ -108,7 +108,7 @@ public final class NexusReviveCommand implements CommandExecutor, TabCompleter {
             plugin.getMessages().send(sender, "general.no-permission");
             return true;
         }
-        if (plugin.getGpsService().getDownedPlayers().isEmpty()) {
+        if (plugin.getGpsService().getDownedPlayers(player).isEmpty()) {
             plugin.getMessages().send(player, "gps.no-downed");
             return true;
         }

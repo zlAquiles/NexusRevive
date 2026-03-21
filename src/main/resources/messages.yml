@@ -72,6 +72,12 @@ actionbar:
   reviver: "&bREVIVING &f<victim> &8| &a<progress>% <progress_bar>"
   suicide: "&4GIVING UP &8| &c<suicide_seconds>s <suicide_bar>"
 
+status:
+  carried: "&3CARRIED"
+  auto-revive: "&bAUTO-REVIVE"
+  protected: "&ePROTECTED"
+  critical: "&cCRITICAL"
+
 bars:
   death-delay:
     format: "&8[<filled><empty>&8]"
@@ -179,3 +185,4 @@ hooks:
   in-combat: "&#ff5555You cannot do that while in combat."
   region-blocked: "&#ff5555The current region blocks this action."
   not-enough-money: "&#ff5555You need &#ffffff<amount> &#ff5555to complete that revive."
+  target-hidden: "&#ff5555That player is hidden and cannot be targeted right now."

@@ -4,13 +4,21 @@ import com.aquiles.nexusrevive.NexusRevivePlugin;
 import com.aquiles.nexusrevive.config.PluginSettings;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Projectile;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.metadata.MetadataValue;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.RegisteredServiceProvider;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.HashSet;
 import java.util.Locale;
+import java.util.Set;
+import java.util.UUID;
 
 public final class CompatibilityService {
     private static final String WORLD_GUARD_REVIVE_FLAG = "nexus-revive";
@@ -65,6 +73,10 @@ public final class CompatibilityService {
     }
 
     public boolean canDown(Player victim, Player attacker) {
+        if (isProtectedFromDowning(victim)) {
+            return false;
+        }
+
         if (attacker == null) {
             return true;
         }
@@ -77,6 +89,10 @@ public final class CompatibilityService {
 
     public BlockReason canStartRevive(Player reviver, Player victim) {
         PluginSettings.Hooks hooks = plugin.getPluginSettings().hooks();
+
+        if (isTargetHidden(reviver, victim)) {
+            return BlockReason.TARGET_HIDDEN;
+        }
 
         if (hooks.worldGuard().enabled()
                 && !isReviveAllowedInRegion(reviver, victim.getLocation())) {
@@ -99,6 +115,10 @@ public final class CompatibilityService {
     public BlockReason canCarry(Player picker, Player victim) {
         PluginSettings.Hooks hooks = plugin.getPluginSettings().hooks();
 
+        if (isTargetHidden(picker, victim)) {
+            return BlockReason.TARGET_HIDDEN;
+        }
+
         if (hooks.worldGuard().enabled()
                 && !isCarryAllowedInRegion(picker, victim.getLocation())) {
             return BlockReason.REGION_BLOCKED;
@@ -116,12 +136,24 @@ public final class CompatibilityService {
     public BlockReason canLoot(Player robber, Player victim) {
         PluginSettings.Hooks hooks = plugin.getPluginSettings().hooks();
 
+        if (isTargetHidden(robber, victim)) {
+            return BlockReason.TARGET_HIDDEN;
+        }
+
         if (hooks.worldGuard().enabled()
                 && !isLootAllowedInRegion(robber, victim.getLocation())) {
             return BlockReason.REGION_BLOCKED;
         }
 
         return BlockReason.NONE;
+    }
+
+    public boolean canSeeDowned(Player viewer, Player target) {
+        return !isTargetHidden(viewer, target);
+    }
+
+    public Player resolveAttacker(EntityDamageByEntityEvent event) {
+        return resolvePlayerOwner(event.getDamager(), 0, new HashSet<>());
     }
 
     public boolean chargeRevive(Player reviver) {
@@ -149,6 +181,10 @@ public final class CompatibilityService {
 
     public String reviveCostText() {
         return String.format(Locale.US, "%.2f", plugin.getPluginSettings().hooks().vault().reviveCost());
+    }
+
+    private boolean isProtectedFromDowning(Player player) {
+        return hasCmiGodMode(player) || hasEssentialsGodMode(player);
     }
 
     private boolean hasEnoughFunds(Player player, double amount) {
@@ -214,6 +250,178 @@ public final class CompatibilityService {
         } catch (ReflectiveOperationException ignored) {
             return false;
         }
+    }
+
+    private boolean isTargetHidden(Player viewer, Player target) {
+        if (viewer == null || target == null) {
+            return false;
+        }
+        if (viewer.getUniqueId().equals(target.getUniqueId())) {
+            return false;
+        }
+        if (!viewer.canSee(target)) {
+            return true;
+        }
+
+        boolean cmiVanished = plugin.getPluginSettings().hooks().cmi().respectVanish() && isCmiVanished(target);
+        boolean essentialsVanished = plugin.getPluginSettings().hooks().essentials().respectVanish() && isEssentialsVanished(target);
+        boolean superVanish = plugin.getPluginSettings().hooks().superVanish().respectVanish() && isSuperVanished(target);
+        return (cmiVanished || essentialsVanished || superVanish) && !viewer.canSee(target);
+    }
+
+    private boolean isCmiVanished(Player player) {
+        if (!plugin.getPluginSettings().hooks().cmi().enabled() || !isPluginEnabled("CMI")) {
+            return false;
+        }
+
+        Object user = resolveCmiUser(player);
+        return invokeBooleanMethod(user, "isVanished", "isVanish", "isCMIVanished");
+    }
+
+    private boolean hasCmiGodMode(Player player) {
+        if (!plugin.getPluginSettings().hooks().cmi().enabled()
+                || !plugin.getPluginSettings().hooks().cmi().respectGodMode()
+                || !isPluginEnabled("CMI")) {
+            return false;
+        }
+
+        Object user = resolveCmiUser(player);
+        return invokeBooleanMethod(user, "isGod", "isGodMode", "isGodEnabled");
+    }
+
+    private Object resolveCmiUser(Player player) {
+        try {
+            Class<?> cmiClass = Class.forName("com.Zrips.CMI.CMI");
+            Object cmi = invokeStaticNoArg(cmiClass, "getInstance");
+            if (cmi == null) {
+                return null;
+            }
+            Object playerManager = invokeNoArg(cmi, "getPlayerManager");
+            if (playerManager == null) {
+                return null;
+            }
+            Object direct = invokeCompatibleMethod(playerManager, "getUser", player);
+            if (direct != null) {
+                return direct;
+            }
+            return invokeCompatibleMethod(playerManager, "getUserByPlayer", player);
+        } catch (ReflectiveOperationException ignored) {
+            return null;
+        }
+    }
+
+    private boolean isEssentialsVanished(Player player) {
+        if (!plugin.getPluginSettings().hooks().essentials().enabled()
+                || !plugin.getPluginSettings().hooks().essentials().respectVanish()) {
+            return false;
+        }
+        Object user = resolveEssentialsUser(player);
+        return invokeBooleanMethod(user, "isVanished");
+    }
+
+    private boolean hasEssentialsGodMode(Player player) {
+        if (!plugin.getPluginSettings().hooks().essentials().enabled()
+                || !plugin.getPluginSettings().hooks().essentials().respectGodMode()) {
+            return false;
+        }
+        Object user = resolveEssentialsUser(player);
+        return invokeBooleanMethod(user, "isGodModeEnabled", "isGodModeEnabledRaw", "isGodMode", "isGod");
+    }
+
+    private Object resolveEssentialsUser(Player player) {
+        Plugin essentials = firstEnabledPlugin("Essentials", "EssentialsX");
+        if (essentials == null) {
+            return null;
+        }
+        try {
+            Object direct = invokeCompatibleMethod(essentials, "getUser", player);
+            if (direct != null) {
+                return direct;
+            }
+            return invokeCompatibleMethod(essentials, "getOfflineUser", player);
+        } catch (ReflectiveOperationException ignored) {
+            return null;
+        }
+    }
+
+    private boolean isSuperVanished(Player player) {
+        if (!plugin.getPluginSettings().hooks().superVanish().enabled()
+                || !plugin.getPluginSettings().hooks().superVanish().respectVanish()
+                || !isPluginEnabled("SuperVanish")) {
+            return false;
+        }
+
+        try {
+            Class<?> apiClass = Class.forName("de.myzelyam.api.vanish.VanishAPI");
+            Object invisible = invokeCompatibleStaticMethod(apiClass, "isInvisible", player);
+            if (invisible instanceof Boolean flag) {
+                return flag;
+            }
+            invisible = invokeCompatibleStaticMethod(apiClass, "isInvisible", (Object) Bukkit.getOfflinePlayer(player.getUniqueId()));
+            return invisible instanceof Boolean flag && flag;
+        } catch (ReflectiveOperationException ignored) {
+            return false;
+        }
+    }
+
+    private Player resolvePlayerOwner(Object source, int depth, Set<Object> visited) {
+        if (source == null || depth > 3 || visited.contains(source)) {
+            return null;
+        }
+        visited.add(source);
+
+        if (source instanceof Player player) {
+            return player;
+        }
+        if (source instanceof Projectile projectile && projectile.getShooter() instanceof Player player) {
+            return player;
+        }
+        if (source instanceof UUID uuid) {
+            return Bukkit.getPlayer(uuid);
+        }
+        if (source instanceof String raw && !raw.isBlank()) {
+            try {
+                Player byUuid = Bukkit.getPlayer(UUID.fromString(raw));
+                if (byUuid != null) {
+                    return byUuid;
+                }
+            } catch (IllegalArgumentException ignored) {
+            }
+            return Bukkit.getPlayerExact(raw);
+        }
+        if (source instanceof Entity entity) {
+            Player byMetadata = resolvePlayerFromMetadata(entity);
+            if (byMetadata != null) {
+                return byMetadata;
+            }
+        }
+
+        for (String methodName : new String[]{"getShooter", "getOwner", "getPlayer", "getEntity", "getLivingEntity", "getParent", "getCause"}) {
+            Object result = invokeOptionalNoArg(source, methodName);
+            Player owner = resolvePlayerOwner(result, depth + 1, visited);
+            if (owner != null) {
+                return owner;
+            }
+        }
+
+        return null;
+    }
+
+    @SuppressWarnings("deprecation")
+    private Player resolvePlayerFromMetadata(Entity entity) {
+        for (String metadataKey : new String[]{"shooter", "owner", "player", "weaponmechanics_shooter", "weaponmechanics-shooter", "qualityarmory-shooter"}) {
+            if (!entity.hasMetadata(metadataKey)) {
+                continue;
+            }
+            for (MetadataValue value : entity.getMetadata(metadataKey)) {
+                Object raw = value.value();
+                Player owner = resolvePlayerOwner(raw, 1, new HashSet<>());
+                if (owner != null) {
+                    return owner;
+                }
+            }
+        }
+        return null;
     }
 
     private boolean isReviveAllowedInRegion(Player actor, Location location) {
@@ -447,6 +655,33 @@ public final class CompatibilityService {
         return null;
     }
 
+    private static Object invokeOptionalNoArg(Object target, String methodName) {
+        try {
+            Method method = target.getClass().getMethod(methodName);
+            return method.invoke(target);
+        } catch (ReflectiveOperationException ignored) {
+            return null;
+        }
+    }
+
+    private static boolean invokeBooleanMethod(Object target, String... methodNames) {
+        if (target == null) {
+            return false;
+        }
+
+        for (String methodName : methodNames) {
+            try {
+                Method method = target.getClass().getMethod(methodName);
+                Object result = method.invoke(target);
+                if (result instanceof Boolean flag) {
+                    return flag;
+                }
+            } catch (ReflectiveOperationException ignored) {
+            }
+        }
+        return false;
+    }
+
     private static Object invokeNoArg(Object target, String methodName) throws ReflectiveOperationException {
         Method method = target.getClass().getMethod(methodName);
         return method.invoke(target);
@@ -464,11 +699,27 @@ public final class CompatibilityService {
         }
     }
 
+    private boolean isPluginEnabled(String pluginName) {
+        Plugin pluginInstance = plugin.getServer().getPluginManager().getPlugin(pluginName);
+        return pluginInstance != null && pluginInstance.isEnabled();
+    }
+
+    private Plugin firstEnabledPlugin(String... pluginNames) {
+        for (String pluginName : pluginNames) {
+            Plugin pluginInstance = plugin.getServer().getPluginManager().getPlugin(pluginName);
+            if (pluginInstance != null && pluginInstance.isEnabled()) {
+                return pluginInstance;
+            }
+        }
+        return null;
+    }
+
     public enum BlockReason {
         NONE,
         REGION_BLOCKED,
         IN_COMBAT,
-        NO_MONEY
+        NO_MONEY,
+        TARGET_HIDDEN
     }
 }
 

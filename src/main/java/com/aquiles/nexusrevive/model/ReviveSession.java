@@ -1,6 +1,6 @@
 package com.aquiles.nexusrevive.model;
 
-import org.bukkit.scheduler.BukkitTask;
+import com.aquiles.nexusrevive.scheduler.NexusTask;
 
 import java.util.UUID;
 
@@ -8,7 +8,7 @@ public final class ReviveSession {
     private final UUID reviverId;
     private final UUID victimId;
     private final double requiredSeconds;
-    private BukkitTask task;
+    private NexusTask task;
     private double progressSeconds;
 
     public ReviveSession(UUID reviverId, UUID victimId, double requiredSeconds) {
@@ -37,11 +37,11 @@ public final class ReviveSession {
         this.progressSeconds += value;
     }
 
-    public BukkitTask getTask() {
+    public NexusTask getTask() {
         return task;
     }
 
-    public void setTask(BukkitTask task) {
+    public void setTask(NexusTask task) {
         this.task = task;
     }
 }

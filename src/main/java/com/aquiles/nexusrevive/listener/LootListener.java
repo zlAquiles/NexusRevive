@@ -40,8 +40,10 @@ public final class LootListener implements Listener {
         }
         int rawSlot = event.getRawSlot();
         var clickType = event.getClick();
-        plugin.getServer().getScheduler().runTask(plugin, () ->
-                plugin.getLootService().handleLootClick(player, rawSlot, clickType)
+        plugin.getSchedulerFacade().runEntityNow(
+                player,
+                () -> plugin.getLootService().handleLootClick(player, rawSlot, clickType),
+                () -> plugin.getLootService().closeForPlayer(player)
         );
     }
 
@@ -55,13 +57,13 @@ public final class LootListener implements Listener {
     @EventHandler
     public void onClose(InventoryCloseEvent event) {
         if (event.getPlayer() instanceof Player player && plugin.getLootService().isLootInventory(event.getInventory())) {
-            plugin.getServer().getScheduler().runTask(plugin, () -> {
+            plugin.getSchedulerFacade().runEntityNow(player, () -> {
                 if (plugin.getLootService().isLootInventory(player.getOpenInventory().getTopInventory())) {
                     plugin.getLootService().debug("Close ignored because player still has loot inventory open: " + player.getName());
                     return;
                 }
                 plugin.getLootService().handleLootClose(player);
-            });
+            }, () -> plugin.getLootService().closeForPlayer(player));
         }
     }
 

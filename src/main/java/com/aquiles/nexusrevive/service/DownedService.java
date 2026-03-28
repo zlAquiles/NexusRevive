@@ -12,6 +12,7 @@ import com.aquiles.nexusrevive.config.PluginSettings;
 import com.aquiles.nexusrevive.model.DownedPlayer;
 import com.aquiles.nexusrevive.model.ReviveSession;
 import com.aquiles.nexusrevive.model.ReviveZone;
+import com.aquiles.nexusrevive.scheduler.NexusTask;
 import com.aquiles.nexusrevive.util.PermissionNodes;
 import com.aquiles.nexusrevive.util.Components;
 import net.kyori.adventure.text.Component;
@@ -34,7 +35,6 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
-import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
 
 import java.io.File;
@@ -55,15 +55,15 @@ public final class DownedService {
     private final NexusRevivePlugin plugin;
     private final Map<UUID, DownedPlayer> downedPlayers = new HashMap<>();
     private final Map<UUID, ReviveSession> reviveByReviver = new HashMap<>();
-    private final Map<UUID, BukkitTask> suicideTasks = new HashMap<>();
+    private final Map<UUID, NexusTask> suicideTasks = new HashMap<>();
+    private final Map<UUID, NexusTask> downedTickTasks = new HashMap<>();
     private final Map<UUID, Location> fakeBarrierLocations = new HashMap<>();
     private final Set<UUID> pendingFinalDeaths = new HashSet<>();
     private final Set<UUID> forcedDismounts = new HashSet<>();
     private final Map<UUID, Map<String, Integer>> soundCooldowns = new HashMap<>();
     private final Map<UUID, Set<PotionEffectType>> managedDownedEffects = new HashMap<>();
     private final File stateFile;
-    private BukkitTask heartbeatTask;
-    private BukkitTask persistenceTask;
+    private NexusTask persistenceTask;
     private boolean stateDirty;
 
     public DownedService(NexusRevivePlugin plugin) {
@@ -72,18 +72,19 @@ public final class DownedService {
         if (plugin.getPluginSettings().persistence().enabled()) {
             loadPersistentState();
         }
-        startHeartbeat();
+        restartDownedTicksForOnlinePlayers();
         startPersistence();
     }
 
     public void reload() {
-        if (heartbeatTask != null) {
-            heartbeatTask.cancel();
-        }
         if (persistenceTask != null) {
             persistenceTask.cancel();
         }
-        startHeartbeat();
+        for (NexusTask task : downedTickTasks.values()) {
+            task.cancel();
+        }
+        downedTickTasks.clear();
+        restartDownedTicksForOnlinePlayers();
         startPersistence();
         for (UUID playerId : downedPlayers.keySet()) {
             Player player = Bukkit.getPlayer(playerId);
@@ -99,18 +100,17 @@ public final class DownedService {
             prepareStatesForShutdown();
             savePersistentState();
         }
-        if (heartbeatTask != null) {
-            heartbeatTask.cancel();
-        }
         if (persistenceTask != null) {
             persistenceTask.cancel();
         }
+        downedTickTasks.values().forEach(NexusTask::cancel);
+        downedTickTasks.clear();
         reviveByReviver.values().forEach(session -> {
             if (session.getTask() != null) {
                 session.getTask().cancel();
             }
         });
-        suicideTasks.values().forEach(BukkitTask::cancel);
+        suicideTasks.values().forEach(NexusTask::cancel);
         reviveByReviver.clear();
         suicideTasks.clear();
         for (UUID uuid : downedPlayers.keySet()) {
@@ -177,12 +177,13 @@ public final class DownedService {
         victim.setWalkSpeed((float) settings.mechanics().downedWalkSpeed());
         victim.setHealth(Math.max(0.5D, Math.min(maxHealth(victim), settings.mechanics().downedHealth())));
         playDownedEntryAnimation(victim, attacker, incomingDamage);
-        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+        plugin.getSchedulerFacade().runEntityLater(victim, () -> {
             if (victim.isOnline() && !victim.isDead() && isDowned(victim)) {
                 applyDownedPose(victim);
             }
-        }, Math.max(1L, settings.mechanics().downedEntryDelayTicks()));
+        }, () -> removeDownedState(victim, false), Math.max(1L, settings.mechanics().downedEntryDelayTicks()));
         applyConfiguredDownedEffects(victim);
+        startDownedTick(victim);
 
         Map<String, String> placeholders = placeholders(victim, attacker, null);
         enrichDownedPlaceholders(placeholders, downed);
@@ -363,7 +364,8 @@ public final class DownedService {
         removeDownedState(victim, false);
         runConfiguredEvent("events.player-final-death", eventPlaceholders(victim, attacker, null, null), eventSenders(victim, attacker, null, null));
         pendingFinalDeaths.add(victim.getUniqueId());
-        Bukkit.getScheduler().runTask(plugin, () -> victim.setHealth(0.0D));
+        plugin.getSchedulerFacade().runEntityNow(victim, () -> victim.setHealth(0.0D), () -> {
+        });
         markStateDirty();
         return true;
     }
@@ -433,7 +435,13 @@ public final class DownedService {
         }
 
         ReviveSession session = new ReviveSession(reviver.getUniqueId(), victim.getUniqueId(), duration);
-        BukkitTask task = Bukkit.getScheduler().runTaskTimer(plugin, () -> tickRevive(session), 0L, 5L);
+        NexusTask task = plugin.getSchedulerFacade().runEntityTimer(
+                reviver,
+                () -> tickRevive(session),
+                () -> stopBySession(session),
+                1L,
+                5L
+        );
         session.setTask(task);
         downed.setActiveReviverId(reviver.getUniqueId());
         reviveByReviver.put(reviver.getUniqueId(), session);
@@ -563,7 +571,7 @@ public final class DownedService {
         }
 
         int countdown = plugin.getConfig().getInt("suicide.hold-seconds", 5);
-        BukkitTask task = Bukkit.getScheduler().runTaskTimer(plugin, new Runnable() {
+        NexusTask task = plugin.getSchedulerFacade().runEntityTimer(player, new Runnable() {
             private int secondsLeft = countdown;
 
             @Override
@@ -590,12 +598,12 @@ public final class DownedService {
                 player.sendActionBar(plugin.getMessages().component("actionbar.suicide", placeholders));
                 secondsLeft--;
             }
-        }, 0L, 20L);
+        }, () -> cancelSuicide(player), 1L, 20L);
         suicideTasks.put(player.getUniqueId(), task);
     }
 
     public void cancelSuicide(Player player) {
-        BukkitTask task = suicideTasks.remove(player.getUniqueId());
+        NexusTask task = suicideTasks.remove(player.getUniqueId());
         if (task != null) {
             task.cancel();
         }
@@ -641,24 +649,27 @@ public final class DownedService {
             if (downed == null || player.isDead()) {
                 return;
             }
-            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            plugin.getSchedulerFacade().runEntityLater(player, () -> {
                 if (!player.isOnline() || player.isDead() || !isDowned(player)) {
                     return;
                 }
                 reapplyDownedState(player);
+                startDownedTick(player);
                 plugin.getMessages().send(
                         player,
                         "victim.reconnected-downed",
                         createVictimHudPlaceholders(player)
                 );
+            }, () -> {
             }, 1L);
             return;
         }
-        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+        plugin.getSchedulerFacade().runEntityLater(player, () -> {
             if (!player.isOnline() || player.isDead() || !isPendingFinalDeath(player)) {
                 return;
             }
             player.setHealth(0.0D);
+        }, () -> {
         }, 1L);
     }
 
@@ -771,69 +782,95 @@ public final class DownedService {
                 });
     }
 
-    private void startHeartbeat() {
-        heartbeatTask = Bukkit.getScheduler().runTaskTimer(plugin, this::tickDownedPlayers, 20L, 20L);
-    }
-
     private void startPersistence() {
         if (!plugin.getPluginSettings().persistence().enabled()) {
             return;
         }
-        persistenceTask = Bukkit.getScheduler().runTaskTimer(plugin, this::flushDirtyState, 100L, 100L);
+        persistenceTask = plugin.getSchedulerFacade().runGlobalTimer(this::flushDirtyState, 100L, 100L);
     }
 
-    private void tickDownedPlayers() {
-        boolean changed = false;
-        for (DownedPlayer downed : downedPlayers.values().stream().toList()) {
-            Player player = Bukkit.getPlayer(downed.getPlayerId());
-            if (player == null || !player.isOnline() || player.isDead()) {
-                continue;
+    private void restartDownedTicksForOnlinePlayers() {
+        for (UUID playerId : downedPlayers.keySet()) {
+            Player player = Bukkit.getPlayer(playerId);
+            if (player != null && player.isOnline() && !player.isDead()) {
+                startDownedTick(player);
             }
-            downed.tickInvulnerability();
-            boolean isBeingRevived = downed.getActiveReviverId() != null;
-            boolean pausesWhileCarried = plugin.getPluginSettings().carry().stopDeathTimerWhileCarried() && downed.getCarrierId() != null;
-            boolean autoReviving = false;
-            if (!isBeingRevived) {
-                autoReviving = tickAutoRevive(player, downed);
-            }
-            if (!isDowned(player)) {
-                changed = true;
-                continue;
-            }
-            if (!isBeingRevived && !autoReviving && !pausesWhileCarried) {
-                downed.tickDeathTimer();
-            }
-            changed = true;
+        }
+    }
 
-            if (!isBeingRevived) {
-                Map<String, String> placeholders = placeholders(
+    private void startDownedTick(Player player) {
+        stopDownedTick(player.getUniqueId());
+        if (!isDowned(player)) {
+            return;
+        }
+
+        downedTickTasks.put(
+                player.getUniqueId(),
+                plugin.getSchedulerFacade().runEntityTimer(
                         player,
-                        downed.getAttackerId() == null ? null : Bukkit.getPlayer(downed.getAttackerId()),
-                        null
-                );
-                enrichDownedPlaceholders(placeholders, downed);
-                if (autoReviving) {
-                    placeholders.put("reviver", "Zona " + downed.getAutoReviveZoneName());
-                    enrichAutoRevivePlaceholders(placeholders, downed, requiredAutoReviveSeconds(player.getLocation()));
-                    player.sendActionBar(plugin.getMessages().component("actionbar.victim-reviving", placeholders));
-                } else {
-                    player.sendActionBar(plugin.getMessages().component("actionbar.victim-waiting", placeholders));
-                }
-            } else {
-                downed.clearAutoRevive();
-            }
+                        () -> tickDownedPlayer(player),
+                        () -> stopDownedTick(player.getUniqueId()),
+                        20L,
+                        20L
+                )
+        );
+    }
 
-            if (downed.getSecondsUntilDeath() <= 0) {
-                if (plugin.getPluginSettings().mechanics().deathAction() == PluginSettings.DeathAction.REVIVE) {
-                    revive(player, null);
-                } else {
-                    killDowned(player);
-                }
+    private void stopDownedTick(UUID playerId) {
+        NexusTask task = downedTickTasks.remove(playerId);
+        if (task != null) {
+            task.cancel();
+        }
+    }
+
+    private void tickDownedPlayer(Player player) {
+        DownedPlayer downed = downedPlayers.get(player.getUniqueId());
+        if (downed == null || !player.isOnline() || player.isDead()) {
+            stopDownedTick(player.getUniqueId());
+            return;
+        }
+
+        downed.tickInvulnerability();
+        boolean isBeingRevived = downed.getActiveReviverId() != null;
+        boolean pausesWhileCarried = plugin.getPluginSettings().carry().stopDeathTimerWhileCarried() && downed.getCarrierId() != null;
+        boolean autoReviving = false;
+        if (!isBeingRevived) {
+            autoReviving = tickAutoRevive(player, downed);
+        }
+        if (!isDowned(player)) {
+            markStateDirty();
+            return;
+        }
+        if (!isBeingRevived && !autoReviving && !pausesWhileCarried) {
+            downed.tickDeathTimer();
+        }
+
+        if (!isBeingRevived) {
+            Map<String, String> placeholders = placeholders(
+                    player,
+                    downed.getAttackerId() == null ? null : Bukkit.getPlayer(downed.getAttackerId()),
+                    null
+            );
+            enrichDownedPlaceholders(placeholders, downed);
+            if (autoReviving) {
+                placeholders.put("reviver", "Zona " + downed.getAutoReviveZoneName());
+                enrichAutoRevivePlaceholders(placeholders, downed, requiredAutoReviveSeconds(player.getLocation()));
+                player.sendActionBar(plugin.getMessages().component("actionbar.victim-reviving", placeholders));
+            } else {
+                player.sendActionBar(plugin.getMessages().component("actionbar.victim-waiting", placeholders));
+            }
+        } else {
+            downed.clearAutoRevive();
+        }
+
+        if (downed.getSecondsUntilDeath() <= 0) {
+            if (plugin.getPluginSettings().mechanics().deathAction() == PluginSettings.DeathAction.REVIVE) {
+                revive(player, null);
+            } else {
+                killDowned(player);
             }
         }
-        if (changed) {
-            markStateDirty();
-        }
+        markStateDirty();
     }
 
     private void applyConfiguredDownedEffects(Player player) {
@@ -1312,7 +1349,12 @@ public final class DownedService {
 
     private void markForcedDismount(Player player) {
         forcedDismounts.add(player.getUniqueId());
-        Bukkit.getScheduler().runTaskLater(plugin, () -> forcedDismounts.remove(player.getUniqueId()), 2L);
+        plugin.getSchedulerFacade().runEntityLater(
+                player,
+                () -> forcedDismounts.remove(player.getUniqueId()),
+                () -> forcedDismounts.remove(player.getUniqueId()),
+                2L
+        );
     }
 
     private void playDownedEntryAnimation(Player victim, Player attacker, double incomingDamage) {
@@ -1478,7 +1520,7 @@ public final class DownedService {
             }
         });
         reviveByReviver.clear();
-        suicideTasks.values().forEach(BukkitTask::cancel);
+        suicideTasks.values().forEach(NexusTask::cancel);
         suicideTasks.clear();
         forcedDismounts.clear();
 

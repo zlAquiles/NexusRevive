@@ -11,4 +11,3 @@ public final class V1_21_11DownedPoseAdapter extends SharedV1_21FamilyDownedPose
         return "1.21.11";
     }
 }
-

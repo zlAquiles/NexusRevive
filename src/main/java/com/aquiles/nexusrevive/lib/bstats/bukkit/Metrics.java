@@ -1,8 +1,9 @@
 package com.aquiles.nexusrevive.lib.bstats.bukkit;
 
+import com.aquiles.nexusrevive.scheduler.NexusScheduler;
+import com.aquiles.nexusrevive.scheduler.NexusTask;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.Plugin;
-import org.bukkit.scheduler.BukkitTask;
 
 import javax.net.ssl.HttpsURLConnection;
 import java.io.BufferedReader;
@@ -29,7 +30,8 @@ public final class Metrics {
     private final boolean logSentData;
     private final boolean logResponseStatusText;
     private final String serverUuid;
-    private BukkitTask submitTask;
+    private final NexusScheduler scheduler;
+    private NexusTask submitTask;
 
     public Metrics(Plugin plugin, int serviceId) {
         this.plugin = plugin;
@@ -38,6 +40,7 @@ public final class Metrics {
         this.logFailedRequests = false;
         this.logSentData = false;
         this.logResponseStatusText = false;
+        this.scheduler = new NexusScheduler(plugin);
         this.serverUuid = UUID.nameUUIDFromBytes(
                 (plugin.getServer().getWorldContainer().getAbsolutePath()
                         + '|'
@@ -64,14 +67,23 @@ public final class Metrics {
     }
 
     private void startSubmitting() {
-        submitTask = Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, () -> {
+        submitTask = scheduler.runGlobalTimer(() -> {
             if (!plugin.isEnabled()) {
                 shutdown();
                 return;
             }
 
             try {
-                submitData();
+                String payload = buildPayload();
+                scheduler.runAsync(() -> {
+                    try {
+                        submitData(payload);
+                    } catch (Throwable throwable) {
+                        if (logFailedRequests) {
+                            plugin.getLogger().log(Level.WARNING, "No se pudo enviar metrics a bStats.", throwable);
+                        }
+                    }
+                });
             } catch (Throwable throwable) {
                 if (logFailedRequests) {
                     plugin.getLogger().log(Level.WARNING, "No se pudo enviar metrics a bStats.", throwable);
@@ -80,8 +92,7 @@ public final class Metrics {
         }, INITIAL_DELAY_TICKS, SUBMIT_PERIOD_TICKS);
     }
 
-    private void submitData() throws IOException {
-        String payload = buildPayload();
+    private void submitData(String payload) throws IOException {
         if (payload.isBlank()) {
             return;
         }

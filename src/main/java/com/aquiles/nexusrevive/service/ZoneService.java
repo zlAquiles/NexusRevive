@@ -3,6 +3,7 @@ package com.aquiles.nexusrevive.service;
 import com.aquiles.nexusrevive.NexusRevivePlugin;
 import com.aquiles.nexusrevive.model.ReviveZone;
 import com.aquiles.nexusrevive.model.Selection;
+import com.aquiles.nexusrevive.scheduler.NexusTask;
 import com.aquiles.nexusrevive.util.Components;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
@@ -20,7 +21,6 @@ import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
-import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Transformation;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
@@ -60,9 +60,9 @@ public final class ZoneService {
     private final Map<String, ReviveZone> zones = new HashMap<>();
     private final Map<UUID, Selection> selections = new HashMap<>();
     private final Map<UUID, SelectionMarkers> holograms = new HashMap<>();
+    private final Map<UUID, NexusTask> previewTasks = new HashMap<>();
     private final NamespacedKey wandKey;
     private YamlConfiguration config;
-    private BukkitTask previewTask;
 
     public ZoneService(NexusRevivePlugin plugin, YamlConfiguration config) {
         this.plugin = plugin;
@@ -96,7 +96,7 @@ public final class ZoneService {
             }
         }
 
-        restartPreviewTask();
+        restartPreviewTasks();
         for (Player viewer : Bukkit.getOnlinePlayers()) {
             hideMarkersFrom(viewer);
         }
@@ -104,15 +104,16 @@ public final class ZoneService {
             Selection selection = selections.get(owner.getUniqueId());
             if (selection != null && selection.isSelectorEnabled()) {
                 updateDisplays(owner);
+                startPreview(owner);
             }
         }
     }
 
     public void shutdown() {
-        if (previewTask != null) {
-            previewTask.cancel();
-            previewTask = null;
+        for (NexusTask task : previewTasks.values()) {
+            task.cancel();
         }
+        previewTasks.clear();
         for (UUID ownerId : new ArrayList<>(holograms.keySet())) {
             removeMarkers(ownerId);
         }
@@ -134,6 +135,7 @@ public final class ZoneService {
         Selection selection = selection(player);
         selection.setSelectorEnabled(true);
         selection.touch();
+        startPreview(player);
         ItemStack wand = createWand();
         Map<Integer, ItemStack> leftovers = player.getInventory().addItem(wand);
         leftovers.values().forEach(item -> player.getWorld().dropItemNaturally(player.getLocation(), item));
@@ -161,6 +163,7 @@ public final class ZoneService {
             selection.setPos2(snapped);
         }
         selection.touch();
+        startPreview(player);
         updateDisplays(player);
     }
 
@@ -242,6 +245,7 @@ public final class ZoneService {
 
     public void clear(Player player) {
         selections.remove(player.getUniqueId());
+        stopPreview(player.getUniqueId());
         removeMarkers(player.getUniqueId());
     }
 
@@ -249,28 +253,47 @@ public final class ZoneService {
         return config;
     }
 
-    private void restartPreviewTask() {
-        if (previewTask != null) {
-            previewTask.cancel();
+    private void restartPreviewTasks() {
+        for (NexusTask task : previewTasks.values()) {
+            task.cancel();
         }
-        previewTask = Bukkit.getScheduler().runTaskTimer(plugin, this::renderSelections, PREVIEW_INTERVAL_TICKS, PREVIEW_INTERVAL_TICKS);
+        previewTasks.clear();
     }
 
-    private void renderSelections() {
-        for (Player owner : Bukkit.getOnlinePlayers()) {
-            Selection selection = selections.get(owner.getUniqueId());
-            if (selection == null || !selection.isSelectorEnabled()) {
-                continue;
-            }
-            if (selection.getPos1() != null) {
-                renderMarker(owner, selection.getPos1(), Color.RED);
-            }
-            if (selection.getPos2() != null) {
-                renderMarker(owner, selection.getPos2(), Color.AQUA);
-            }
-            if (selection.isComplete() && !selection.hasWorldMismatch()) {
-                renderBox(owner, selection.getPos1(), selection.getPos2());
-            }
+    private void startPreview(Player owner) {
+        stopPreview(owner.getUniqueId());
+        previewTasks.put(
+                owner.getUniqueId(),
+                plugin.getSchedulerFacade().runEntityTimer(
+                        owner,
+                        () -> renderSelection(owner),
+                        () -> clear(owner),
+                        PREVIEW_INTERVAL_TICKS,
+                        PREVIEW_INTERVAL_TICKS
+                )
+        );
+    }
+
+    private void stopPreview(UUID ownerId) {
+        NexusTask task = previewTasks.remove(ownerId);
+        if (task != null) {
+            task.cancel();
+        }
+    }
+
+    private void renderSelection(Player owner) {
+        Selection selection = selections.get(owner.getUniqueId());
+        if (selection == null || !selection.isSelectorEnabled()) {
+            return;
+        }
+        if (selection.getPos1() != null) {
+            renderMarker(owner, selection.getPos1(), Color.RED);
+        }
+        if (selection.getPos2() != null) {
+            renderMarker(owner, selection.getPos2(), Color.AQUA);
+        }
+        if (selection.isComplete() && !selection.hasWorldMismatch()) {
+            renderBox(owner, selection.getPos1(), selection.getPos2());
         }
     }
 

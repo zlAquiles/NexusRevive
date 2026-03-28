@@ -14,6 +14,7 @@ import com.aquiles.nexusrevive.listener.ZoneSelectionListener;
 import com.aquiles.nexusrevive.lib.bstats.bukkit.Metrics;
 import com.aquiles.nexusrevive.nms.DownedPoseAdapter;
 import com.aquiles.nexusrevive.nms.NmsAdapterResolver;
+import com.aquiles.nexusrevive.scheduler.NexusScheduler;
 import com.aquiles.nexusrevive.service.CompatibilityService;
 import com.aquiles.nexusrevive.service.DownedService;
 import com.aquiles.nexusrevive.service.EventActionsService;
@@ -53,6 +54,7 @@ public final class NexusRevivePlugin extends JavaPlugin {
     private EventActionsService eventActionsService;
     private NmsPoseBroadcaster nmsPoseBroadcaster;
     private DownedPoseAdapter downedPoseAdapter;
+    private NexusScheduler scheduler;
     private NexusRevivePlaceholderExpansion placeholderExpansion;
     private boolean shuttingDown;
 
@@ -74,6 +76,7 @@ public final class NexusRevivePlugin extends JavaPlugin {
         }
 
         ensureRuntimeResources();
+        this.scheduler = new NexusScheduler(this);
         this.nmsPoseBroadcaster = new NmsPoseBroadcaster(this);
         this.downedPoseAdapter = NmsAdapterResolver.resolve(this, minecraftVersion, nmsPoseBroadcaster);
 
@@ -228,6 +231,10 @@ public final class NexusRevivePlugin extends JavaPlugin {
         return downedPoseAdapter;
     }
 
+    public NexusScheduler getSchedulerFacade() {
+        return scheduler;
+    }
+
     public boolean isServerStopping() {
         if (shuttingDown) {
             return true;
@@ -291,11 +298,12 @@ public final class NexusRevivePlugin extends JavaPlugin {
         String version = pluginVersion();
 
         getServer().getConsoleSender().sendMessage(" ");
-        getServer().getConsoleSender().sendMessage(Components.colorize("&#55d7ff  ____            _            "));
-        getServer().getConsoleSender().sendMessage(Components.colorize("&#55d7ff |  _ \\\\ _____   _(_)_   _____  &fRevive &7v" + version));
-        getServer().getConsoleSender().sendMessage(Components.colorize("&#55d7ff | |_) / _ \\\\ \\\\ / / \\\\ \\\\ / / _ \\\\ &7Running on &f" + getServer().getName()));
-        getServer().getConsoleSender().sendMessage(Components.colorize("&#55d7ff |  _ <  __/\\\\ V /| |\\\\ V /  __/ &7By &fAquiles"));
-        getServer().getConsoleSender().sendMessage(Components.colorize("&#55d7ff |_| \\\\_\\\\___| \\\\_/ |_| \\\\_/ \\\\___|"));
+        getServer().getConsoleSender().sendMessage(Components.colorize("&#55d7ff  _____            _           "));
+        getServer().getConsoleSender().sendMessage(Components.colorize("&#55d7ff |  __ \\\\          (_)          &fRevive &7v" + version));
+        getServer().getConsoleSender().sendMessage(Components.colorize("&#55d7ff | |__) |_____   ___  _____   &7Running on &f" + getServer().getName()));
+        getServer().getConsoleSender().sendMessage(Components.colorize("&#55d7ff |  _  // _ \\\\ \\\\ / / |/ / _ \\\\  &7By &fAquiles"));
+        getServer().getConsoleSender().sendMessage(Components.colorize("&#55d7ff | | \\\\ \\\\  __/\\\\ V /|   <  __/"));
+        getServer().getConsoleSender().sendMessage(Components.colorize("&#55d7ff |_|  \\\\_\\\\___| \\\\_/ |_|\\\\_\\\\___|"));
         getServer().getConsoleSender().sendMessage(" ");
         getServer().getConsoleSender().sendMessage(Components.colorize("&aSuccessfully enabled.&7 (took " + tookMs + "ms)"));
     }
@@ -305,12 +313,12 @@ public final class NexusRevivePlugin extends JavaPlugin {
             return;
         }
 
-        getServer().getScheduler().runTaskAsynchronously(this, () -> {
+        scheduler.runAsync(() -> {
             try {
                 String latestVersion = fetchLatestVersion();
-                getServer().getScheduler().runTask(this, () -> logUpdateResult(latestVersion));
+                scheduler.runGlobal(() -> logUpdateResult(latestVersion));
             } catch (Exception exception) {
-                getServer().getScheduler().runTask(this, () -> logUpdateFailure(exception));
+                scheduler.runGlobal(() -> logUpdateFailure(exception));
             }
         });
     }

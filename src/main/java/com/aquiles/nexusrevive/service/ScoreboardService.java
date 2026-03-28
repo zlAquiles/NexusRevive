@@ -1,22 +1,20 @@
 package com.aquiles.nexusrevive.service;
 
 import com.aquiles.nexusrevive.NexusRevivePlugin;
+import com.aquiles.nexusrevive.scheduler.NexusTask;
 import com.aquiles.nexusrevive.scoreboard.NexusBoard;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
-import org.bukkit.scheduler.BukkitTask;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 
 public final class ScoreboardService {
     private final NexusRevivePlugin plugin;
     private final Map<UUID, NexusBoard> boards = new HashMap<>();
-    private BukkitTask updateTask;
+    private final Map<UUID, NexusTask> updateTasks = new HashMap<>();
 
     public ScoreboardService(NexusRevivePlugin plugin) {
         this.plugin = plugin;
@@ -35,6 +33,10 @@ public final class ScoreboardService {
     }
 
     public void clear(Player player) {
+        NexusTask task = updateTasks.remove(player.getUniqueId());
+        if (task != null) {
+            task.cancel();
+        }
         NexusBoard board = boards.remove(player.getUniqueId());
         if (board != null && !board.isDeleted()) {
             board.delete();
@@ -45,54 +47,58 @@ public final class ScoreboardService {
         if (!plugin.getPluginSettings().scoreboard().enabled()) {
             return;
         }
-        long interval = Math.max(1L, plugin.getPluginSettings().scoreboard().updateIntervalTicks());
-        updateTask = Bukkit.getScheduler().runTaskTimer(plugin, this::tick, 1L, interval);
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            startTracking(player);
+        }
     }
 
     private void stop() {
-        if (updateTask != null) {
-            updateTask.cancel();
-            updateTask = null;
+        for (NexusTask task : updateTasks.values()) {
+            task.cancel();
         }
+        updateTasks.clear();
     }
 
-    private void tick() {
+    public void handleJoin(Player player) {
         if (!plugin.getPluginSettings().scoreboard().enabled()) {
-            clearAll();
+            return;
+        }
+        startTracking(player);
+    }
+
+    private void startTracking(Player player) {
+        NexusTask existing = updateTasks.remove(player.getUniqueId());
+        if (existing != null) {
+            existing.cancel();
+        }
+
+        long interval = Math.max(1L, plugin.getPluginSettings().scoreboard().updateIntervalTicks());
+        updateTasks.put(
+                player.getUniqueId(),
+                plugin.getSchedulerFacade().runEntityTimer(
+                        player,
+                        () -> tick(player),
+                        () -> clear(player),
+                        1L,
+                        interval
+                )
+        );
+    }
+
+    private void tick(Player player) {
+        if (!plugin.getPluginSettings().scoreboard().enabled() || !player.isOnline() || player.isDead()) {
+            clear(player);
             return;
         }
 
-        Set<UUID> activeBoards = new HashSet<>();
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            if (!player.isOnline() || player.isDead()) {
-                clear(player);
-                continue;
-            }
-
-            BoardView view = resolveView(player);
-            if (view == null) {
-                clear(player);
-                continue;
-            }
-
-            activeBoards.add(player.getUniqueId());
-            NexusBoard board = boards.computeIfAbsent(player.getUniqueId(), ignored -> new NexusBoard(player));
-            updateBoard(board, view);
+        BoardView view = resolveView(player);
+        if (view == null) {
+            clear(player);
+            return;
         }
 
-        Set<UUID> staleBoards = new HashSet<>(boards.keySet());
-        staleBoards.removeAll(activeBoards);
-        for (UUID uuid : staleBoards) {
-            Player player = Bukkit.getPlayer(uuid);
-            if (player != null) {
-                clear(player);
-                continue;
-            }
-            NexusBoard board = boards.remove(uuid);
-            if (board != null && !board.isDeleted()) {
-                board.delete();
-            }
-        }
+        NexusBoard board = boards.computeIfAbsent(player.getUniqueId(), ignored -> new NexusBoard(player));
+        updateBoard(board, view);
     }
 
     private void updateBoard(NexusBoard board, BoardView view) {

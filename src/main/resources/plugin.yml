@@ -2,6 +2,7 @@ name: NexusRevive
 version: ${version}
 main: com.aquiles.nexusrevive.NexusRevivePlugin
 api-version: "1.19"
+folia-supported: true
 authors: [Aquiles]
 description: Advanced downed, revive, carry, loot, GPS, and zone system for Paper servers.
 website: https://discord.gg/WHBWBWWYDq

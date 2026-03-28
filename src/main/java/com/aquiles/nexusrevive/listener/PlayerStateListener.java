@@ -259,6 +259,7 @@ public final class PlayerStateListener implements Listener {
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
         plugin.getGpsService().handleViewerJoin(event.getPlayer());
+        plugin.getScoreboardService().handleJoin(event.getPlayer());
         plugin.getDownedService().handleReconnect(event.getPlayer());
     }
 

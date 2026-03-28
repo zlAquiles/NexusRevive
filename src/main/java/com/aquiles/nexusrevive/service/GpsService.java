@@ -2,6 +2,7 @@ package com.aquiles.nexusrevive.service;
 
 import com.aquiles.nexusrevive.NexusRevivePlugin;
 import com.aquiles.nexusrevive.config.GpsSettings;
+import com.aquiles.nexusrevive.scheduler.NexusTask;
 import com.aquiles.nexusrevive.util.Components;
 import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.text.Component;
@@ -19,7 +20,6 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.persistence.PersistentDataType;
-import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Transformation;
 import org.bukkit.util.Vector;
 import org.joml.AxisAngle4f;
@@ -42,7 +42,7 @@ public final class GpsService {
     private final Map<UUID, BossBar> bossBars = new HashMap<>();
     private final Map<UUID, TextDisplay> holograms = new HashMap<>();
     private final Map<UUID, Double> hologramHeights = new HashMap<>();
-    private BukkitTask trackingTask;
+    private final Map<UUID, NexusTask> trackingTasks = new HashMap<>();
 
     public GpsService(NexusRevivePlugin plugin) {
         this.plugin = plugin;
@@ -55,10 +55,8 @@ public final class GpsService {
     }
 
     public void shutdown() {
-        if (trackingTask != null) {
-            trackingTask.cancel();
-            trackingTask = null;
-        }
+        trackingTasks.values().forEach(NexusTask::cancel);
+        trackingTasks.clear();
         for (UUID trackerId : new ArrayList<>(trackedTargets.keySet())) {
             Player tracker = Bukkit.getPlayer(trackerId);
             if (tracker != null) {
@@ -110,6 +108,7 @@ public final class GpsService {
             return;
         }
         trackedTargets.put(tracker.getUniqueId(), targetId);
+        restartTrackingTask(tracker);
         plugin.getMessages().send(tracker, "gps.started", Map.of("victim", target.getName()));
         updateTracker(tracker, target);
     }
@@ -126,6 +125,10 @@ public final class GpsService {
 
     public void stopTracking(Player tracker) {
         trackedTargets.remove(tracker.getUniqueId());
+        NexusTask task = trackingTasks.remove(tracker.getUniqueId());
+        if (task != null) {
+            task.cancel();
+        }
         clearVisuals(tracker);
     }
 
@@ -148,35 +151,48 @@ public final class GpsService {
 
     private void start() {
         cleanupStaleHolograms();
-        trackingTask = Bukkit.getScheduler().runTaskTimer(
-                plugin,
-                this::tickTracking,
-                plugin.getGpsSettings().updateIntervalTicks(),
-                plugin.getGpsSettings().updateIntervalTicks()
+    }
+
+    private void restartTrackingTask(Player tracker) {
+        NexusTask existing = trackingTasks.remove(tracker.getUniqueId());
+        if (existing != null) {
+            existing.cancel();
+        }
+        long interval = Math.max(1L, plugin.getGpsSettings().updateIntervalTicks());
+        trackingTasks.put(
+                tracker.getUniqueId(),
+                plugin.getSchedulerFacade().runEntityTimer(
+                        tracker,
+                        () -> tickTracker(tracker),
+                        () -> stopTracking(tracker),
+                        interval,
+                        interval
+                )
         );
     }
 
-    private void tickTracking() {
-        for (Map.Entry<UUID, UUID> entry : new ArrayList<>(trackedTargets.entrySet())) {
-            Player tracker = Bukkit.getPlayer(entry.getKey());
-            Player target = Bukkit.getPlayer(entry.getValue());
-            if (tracker == null || target == null || !tracker.isOnline() || !target.isOnline()
-                    || !plugin.getDownedService().isDowned(target)
-                    || !plugin.getCompatibilityService().canSeeDowned(tracker, target)) {
-                if (tracker != null) {
-                    plugin.getMessages().send(tracker, "gps.target-lost");
-                    stopTracking(tracker);
-                }
-                continue;
-            }
+    private void tickTracker(Player tracker) {
+        UUID targetId = trackedTargets.get(tracker.getUniqueId());
+        if (targetId == null) {
+            stopTracking(tracker);
+            return;
+        }
 
-            updateTracker(tracker, target);
+        Player target = Bukkit.getPlayer(targetId);
+        if (target == null || !tracker.isOnline() || !target.isOnline()
+                || !plugin.getDownedService().isDowned(target)
+                || !plugin.getCompatibilityService().canSeeDowned(tracker, target)) {
+            plugin.getMessages().send(tracker, "gps.target-lost");
+            stopTracking(tracker);
+            return;
+        }
 
-            if (tracker.getWorld().equals(target.getWorld())
-                    && tracker.getLocation().distance(target.getLocation()) <= plugin.getGpsSettings().bossBar().arriveDistance()) {
-                plugin.getMessages().send(tracker, "gps.arrived");
-                stopTracking(tracker);
-            }
+        updateTracker(tracker, target);
+
+        if (tracker.getWorld().equals(target.getWorld())
+                && tracker.getLocation().distance(target.getLocation()) <= plugin.getGpsSettings().bossBar().arriveDistance()) {
+            plugin.getMessages().send(tracker, "gps.arrived");
+            stopTracking(tracker);
         }
     }
 

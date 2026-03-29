@@ -37,6 +37,10 @@ public final class ScoreboardService {
         if (task != null) {
             task.cancel();
         }
+        clearBoard(player);
+    }
+
+    private void clearBoard(Player player) {
         NexusBoard board = boards.remove(player.getUniqueId());
         if (board != null && !board.isDeleted()) {
             board.delete();
@@ -93,7 +97,7 @@ public final class ScoreboardService {
 
         BoardView view = resolveView(player);
         if (view == null) {
-            clear(player);
+            clearBoard(player);
             return;
         }
 

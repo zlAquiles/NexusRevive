@@ -40,6 +40,13 @@ import java.nio.charset.StandardCharsets;
 
 public final class NexusRevivePlugin extends JavaPlugin {
     private static final String UPDATE_CHECK_URL = "https://gist.githubusercontent.com/zlAquiles/1924d746bfbb0a608af9485c0aa029f6/raw/version.txt";
+    private static final String STARTUP_ART = """
+             ____            _
+            |  _ \\ _____   _(_)_   _____
+            | |_) / _ \\ \\ / / \\ \\ / / _ \\
+            |  _ <  __/\\ V /| |\\ V /  __/
+            |_| \\_\\___| \\_/ |_| \\_/ \\___|
+            """;
     private static NexusRevivePlugin instance;
 
     private PluginSettings pluginSettings;
@@ -298,12 +305,12 @@ public final class NexusRevivePlugin extends JavaPlugin {
         String version = pluginVersion();
 
         getServer().getConsoleSender().sendMessage(" ");
-        getServer().getConsoleSender().sendMessage(Components.colorize("&#55d7ff  _____            _           "));
-        getServer().getConsoleSender().sendMessage(Components.colorize("&#55d7ff |  __ \\\\          (_)          &fRevive &7v" + version));
-        getServer().getConsoleSender().sendMessage(Components.colorize("&#55d7ff | |__) |_____   ___  _____   &7Running on &f" + getServer().getName()));
-        getServer().getConsoleSender().sendMessage(Components.colorize("&#55d7ff |  _  // _ \\\\ \\\\ / / |/ / _ \\\\  &7By &fAquiles"));
-        getServer().getConsoleSender().sendMessage(Components.colorize("&#55d7ff | | \\\\ \\\\  __/\\\\ V /|   <  __/"));
-        getServer().getConsoleSender().sendMessage(Components.colorize("&#55d7ff |_|  \\\\_\\\\___| \\\\_/ |_|\\\\_\\\\___|"));
+        String[] artLines = STARTUP_ART.stripIndent().split("\\R");
+        getServer().getConsoleSender().sendMessage(Components.colorize("&#55d7ff" + artLines[0]));
+        getServer().getConsoleSender().sendMessage(Components.colorize("&#55d7ff" + artLines[1] + " &fRevive &7v" + version));
+        getServer().getConsoleSender().sendMessage(Components.colorize("&#55d7ff" + artLines[2] + " &7Running on &f" + getServer().getName()));
+        getServer().getConsoleSender().sendMessage(Components.colorize("&#55d7ff" + artLines[3] + " &7By &fAquiles"));
+        getServer().getConsoleSender().sendMessage(Components.colorize("&#55d7ff" + artLines[4]));
         getServer().getConsoleSender().sendMessage(" ");
         getServer().getConsoleSender().sendMessage(Components.colorize("&aSuccessfully enabled.&7 (took " + tookMs + "ms)"));
     }

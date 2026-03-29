@@ -299,14 +299,12 @@ public final class GpsService {
     }
 
     private void updateHologram(Player tracker, Component text) {
-        TextDisplay display = holograms.computeIfAbsent(tracker.getUniqueId(), ignored -> spawnHologram(tracker));
         UUID targetId = trackedTargets.get(tracker.getUniqueId());
         Player target = targetId == null ? null : Bukkit.getPlayer(targetId);
         Location location = hologramLocation(tracker, target);
+        TextDisplay display = upsertHologram(tracker, location);
         display.teleport(location);
         display.text(text);
-        applyHologramScale(display);
-        hideHologramFromOthers(tracker, display);
     }
 
     private TextDisplay spawnHologram(Player tracker) {
@@ -314,6 +312,7 @@ public final class GpsService {
             entity.text(Component.empty());
             entity.setGravity(false);
             entity.setPersistent(false);
+            entity.setVisibleByDefault(false);
             entity.setBillboard(Display.Billboard.CENTER);
             entity.setInterpolationDelay(0);
             entity.setInterpolationDuration(plugin.getGpsSettings().hologram().interpolationDuration());
@@ -324,8 +323,20 @@ public final class GpsService {
             entity.getPersistentDataContainer().set(HOLOGRAM_KEY, PersistentDataType.BYTE, (byte) 1);
         });
         applyHologramScale(display);
-        hideHologramFromOthers(tracker, display);
+        tracker.showEntity(plugin, display);
         return display;
+    }
+
+    private TextDisplay upsertHologram(Player tracker, Location location) {
+        TextDisplay current = holograms.get(tracker.getUniqueId());
+        if (current != null && current.isValid() && current.getWorld().equals(location.getWorld())) {
+            return current;
+        }
+
+        removeHologram(tracker);
+        TextDisplay created = spawnHologram(tracker);
+        holograms.put(tracker.getUniqueId(), created);
+        return created;
     }
 
     private Location hologramLocation(Player tracker) {
@@ -345,16 +356,6 @@ public final class GpsService {
         }
         base.setPitch(0.0F);
         return base;
-    }
-
-    private void hideHologramFromOthers(Player tracker, TextDisplay display) {
-        for (Player online : Bukkit.getOnlinePlayers()) {
-            if (online.getUniqueId().equals(tracker.getUniqueId())) {
-                online.showEntity(plugin, display);
-            } else {
-                online.hideEntity(plugin, display);
-            }
-        }
     }
 
     private void removeBossBar(Player tracker) {

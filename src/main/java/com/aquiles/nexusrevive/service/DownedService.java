@@ -62,6 +62,8 @@ public final class DownedService {
     private final Set<UUID> forcedDismounts = new HashSet<>();
     private final Map<UUID, Map<String, Integer>> soundCooldowns = new HashMap<>();
     private final Map<UUID, Set<PotionEffectType>> managedDownedEffects = new HashMap<>();
+    private final Map<String, Sound> soundCache = new HashMap<>();
+    private final Map<String, Particle> particleCache = new HashMap<>();
     private final File stateFile;
     private NexusTask persistenceTask;
     private boolean stateDirty;
@@ -1089,16 +1091,22 @@ public final class DownedService {
             return null;
         }
 
+        String normalized = rawSound.trim().toUpperCase(Locale.ROOT);
+        if (soundCache.containsKey(normalized)) {
+            return soundCache.get(normalized);
+        }
+
         for (Field field : Sound.class.getFields()) {
             if (!Modifier.isStatic(field.getModifiers()) || !Sound.class.isAssignableFrom(field.getType())) {
                 continue;
             }
-            if (!field.getName().equalsIgnoreCase(rawSound)) {
+            if (!field.getName().equalsIgnoreCase(normalized)) {
                 continue;
             }
             try {
                 Object value = field.get(null);
                 if (value instanceof Sound sound) {
+                    soundCache.put(normalized, sound);
                     return sound;
                 }
             } catch (IllegalAccessException ignored) {
@@ -1113,10 +1121,12 @@ public final class DownedService {
         for (Object constant : constants) {
             if (constant instanceof Sound sound
                     && constant instanceof Enum<?> enumConstant
-                    && enumConstant.name().equalsIgnoreCase(rawSound)) {
+                    && enumConstant.name().equalsIgnoreCase(normalized)) {
+                soundCache.put(normalized, sound);
                 return sound;
             }
         }
+        soundCache.put(normalized, null);
         return null;
     }
 
@@ -1261,9 +1271,17 @@ public final class DownedService {
             return null;
         }
 
+        String normalized = rawParticle.trim().toUpperCase(Locale.ROOT);
+        if (particleCache.containsKey(normalized)) {
+            return particleCache.get(normalized);
+        }
+
         try {
-            return Particle.valueOf(rawParticle.trim().toUpperCase(Locale.ROOT));
+            Particle particle = Particle.valueOf(normalized);
+            particleCache.put(normalized, particle);
+            return particle;
         } catch (IllegalArgumentException ignored) {
+            particleCache.put(normalized, null);
             return null;
         }
     }
@@ -1532,6 +1550,9 @@ public final class DownedService {
     }
 
     private void markStateDirty() {
+        if (!plugin.getPluginSettings().persistence().enabled()) {
+            return;
+        }
         stateDirty = true;
     }
 

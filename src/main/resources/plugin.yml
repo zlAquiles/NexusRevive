@@ -6,7 +6,7 @@ folia-supported: true
 authors: [Aquiles]
 description: Advanced downed, revive, carry, loot, GPS, and zone system for Paper servers.
 website: https://discord.gg/WHBWBWWYDq
-softdepend: [Vault, WorldGuard, DeluxeCombat, PlaceholderAPI, CMI, Essentials, EssentialsX, SuperVanish, QualityArmory, WeaponMechanics]
+softdepend: [Vault, WorldGuard, DeluxeCombat, PlaceholderAPI, CMI, Essentials, EssentialsX, SuperVanish, QualityArmory, WeaponMechanics, Vulcan]
 commands:
   nexusrevive:
     description: Main command for NexusRevive

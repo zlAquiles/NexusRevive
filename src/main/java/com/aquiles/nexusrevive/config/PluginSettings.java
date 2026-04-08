@@ -114,6 +114,8 @@ public record PluginSettings(
                         config.getBoolean("downed-interactions.allow-projectiles", false),
                         config.getBoolean("downed-interactions.allow-consume", false),
                         config.getBoolean("downed-interactions.allow-inventory", false),
+                        config.getBoolean("downed-interactions.allow-crafting-grid", false),
+                        config.getBoolean("downed-interactions.allow-recipe-book", false),
                         config.getBoolean("downed-interactions.allow-offhand", false),
                         config.getBoolean("downed-interactions.allow-helmet", false),
                         config.getBoolean("downed-interactions.allow-chestplate", false),
@@ -164,6 +166,12 @@ public record PluginSettings(
                         ),
                         new WeaponMechanicsHook(
                                 config.getBoolean("hooks.weaponmechanics.enabled", true)
+                        ),
+                        new VulcanHook(
+                                config.getBoolean("hooks.vulcan.enabled", true),
+                                config.getBoolean("hooks.vulcan.ignore-movement-checks-while-downed", true),
+                                config.getBoolean("hooks.vulcan.cancel-setbacks-while-downed", true),
+                                config.getBoolean("hooks.vulcan.cancel-punishments-while-downed", true)
                         )
                 ),
                 new Scoreboard(
@@ -466,6 +474,8 @@ public record PluginSettings(
             boolean allowProjectiles,
             boolean allowConsume,
             boolean allowInventory,
+            boolean allowCraftingGrid,
+            boolean allowRecipeBook,
             boolean allowOffhand,
             boolean allowHelmet,
             boolean allowChestplate,
@@ -493,7 +503,8 @@ public record PluginSettings(
             EssentialsHook essentials,
             SuperVanishHook superVanish,
             QualityArmoryHook qualityArmory,
-            WeaponMechanicsHook weaponMechanics
+            WeaponMechanicsHook weaponMechanics,
+            VulcanHook vulcan
     ) {
     }
 
@@ -543,6 +554,14 @@ public record PluginSettings(
 
     public record WeaponMechanicsHook(
             boolean enabled
+    ) {
+    }
+
+    public record VulcanHook(
+            boolean enabled,
+            boolean ignoreMovementChecksWhileDowned,
+            boolean cancelSetbacksWhileDowned,
+            boolean cancelPunishmentsWhileDowned
     ) {
     }
 

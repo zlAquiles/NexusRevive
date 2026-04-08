@@ -5,6 +5,7 @@ import com.aquiles.nexusrevive.util.Components;
 import com.aquiles.nexusrevive.util.PermissionNodes;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
@@ -138,7 +139,7 @@ public final class LootService {
             debug("Click ignored: rawSlot outside top inventory robber=" + robber.getName() + " rawSlot=" + rawSlot);
             return;
         }
-        if (!clickType.isLeftClick() && !clickType.isRightClick()) {
+        if (!clickType.isLeftClick() && !clickType.isRightClick() && !clickType.isShiftClick()) {
             debug("Click ignored: unsupported clickType=" + clickType + " robber=" + robber.getName());
             return;
         }
@@ -161,25 +162,23 @@ public final class LootService {
         ItemStack stack = getVictimItem(victim, victimSlot);
         if (stack == null || stack.getType().isAir()) {
             debug("Click found empty slot victim=" + victim.getName() + " victimSlot=" + victimSlot);
-            plugin.getMessages().send(robber, "loot.nothing-to-steal");
-            render(session);
             return;
         }
         debug("Click found item victim=" + victim.getName() + " victimSlot=" + victimSlot
                 + " item=" + stack.getType() + " amount=" + stack.getAmount());
-        if (!canFitCompletely(robber.getInventory(), stack)) {
-            debug("Click blocked: robber inventory lacks space robber=" + robber.getName());
-            plugin.getMessages().send(robber, "loot.no-space");
-            return;
+        boolean changed = switch (clickType) {
+            case SHIFT_LEFT, SHIFT_RIGHT -> handleShiftLoot(robber, victim, victimSlot, stack);
+            case LEFT -> handleLeftLoot(robber, victim, victimSlot, stack);
+            case RIGHT -> handleRightLoot(robber, victim, victimSlot, stack);
+            default -> false;
+        };
+        if (changed) {
+            debug("Click transfer success robber=" + robber.getName() + " victim=" + victim.getName()
+                    + " victimSlot=" + victimSlot + " item=" + stack.getType() + " amount=" + stack.getAmount());
+            victim.updateInventory();
+            robber.updateInventory();
+            render(session);
         }
-
-        setVictimItem(victim, victimSlot, null);
-        robber.getInventory().addItem(stack.clone());
-        victim.updateInventory();
-        robber.updateInventory();
-        debug("Click transfer success robber=" + robber.getName() + " victim=" + victim.getName()
-                + " victimSlot=" + victimSlot + " item=" + stack.getType() + " amount=" + stack.getAmount());
-        render(session);
     }
 
     public void handleLootClose(Player robber) {
@@ -289,6 +288,103 @@ public final class LootService {
             }
         }
         return false;
+    }
+
+    private boolean handleShiftLoot(Player robber, Player victim, int victimSlot, ItemStack stack) {
+        Map<Integer, ItemStack> leftovers = robber.getInventory().addItem(stack.clone());
+        int leftoverAmount = leftovers.values().stream().mapToInt(ItemStack::getAmount).sum();
+        if (leftoverAmount >= stack.getAmount()) {
+            debug("Shift loot blocked: robber inventory lacks space robber=" + robber.getName());
+            plugin.getMessages().send(robber, "loot.no-space");
+            return false;
+        }
+
+        if (leftoverAmount <= 0) {
+            setVictimItem(victim, victimSlot, null);
+        } else {
+            ItemStack remaining = stack.clone();
+            remaining.setAmount(leftoverAmount);
+            setVictimItem(victim, victimSlot, remaining);
+        }
+        return true;
+    }
+
+    private boolean handleLeftLoot(Player robber, Player victim, int victimSlot, ItemStack stack) {
+        ItemStack cursor = sanitize(robber.getItemOnCursor());
+        if (cursor == null) {
+            robber.setItemOnCursor(stack.clone());
+            setVictimItem(victim, victimSlot, null);
+            return true;
+        }
+
+        if (!cursor.isSimilar(stack)) {
+            debug("Left loot ignored: cursor mismatch robber=" + robber.getName());
+            return false;
+        }
+
+        int maxStack = cursor.getMaxStackSize();
+        int transfer = Math.min(Math.max(0, maxStack - cursor.getAmount()), stack.getAmount());
+        if (transfer <= 0) {
+            debug("Left loot ignored: cursor full robber=" + robber.getName());
+            return false;
+        }
+
+        ItemStack mergedCursor = cursor.clone();
+        mergedCursor.setAmount(cursor.getAmount() + transfer);
+        robber.setItemOnCursor(mergedCursor);
+
+        if (transfer >= stack.getAmount()) {
+            setVictimItem(victim, victimSlot, null);
+        } else {
+            ItemStack remaining = stack.clone();
+            remaining.setAmount(stack.getAmount() - transfer);
+            setVictimItem(victim, victimSlot, remaining);
+        }
+        return true;
+    }
+
+    private boolean handleRightLoot(Player robber, Player victim, int victimSlot, ItemStack stack) {
+        ItemStack cursor = sanitize(robber.getItemOnCursor());
+        if (cursor == null) {
+            int take = (stack.getAmount() + 1) / 2;
+            ItemStack taken = stack.clone();
+            taken.setAmount(take);
+            robber.setItemOnCursor(taken);
+
+            if (take >= stack.getAmount()) {
+                setVictimItem(victim, victimSlot, null);
+            } else {
+                ItemStack remaining = stack.clone();
+                remaining.setAmount(stack.getAmount() - take);
+                setVictimItem(victim, victimSlot, remaining);
+            }
+            return true;
+        }
+
+        if (!cursor.isSimilar(stack) || cursor.getAmount() >= cursor.getMaxStackSize()) {
+            debug("Right loot ignored: cursor mismatch/full robber=" + robber.getName());
+            return false;
+        }
+
+        ItemStack mergedCursor = cursor.clone();
+        mergedCursor.setAmount(cursor.getAmount() + 1);
+        robber.setItemOnCursor(mergedCursor);
+
+        if (stack.getAmount() <= 1) {
+            setVictimItem(victim, victimSlot, null);
+        } else {
+            ItemStack remaining = stack.clone();
+            remaining.setAmount(stack.getAmount() - 1);
+            setVictimItem(victim, victimSlot, remaining);
+        }
+        return true;
+    }
+
+    private ItemStack sanitize(ItemStack itemStack) {
+        if (itemStack == null || itemStack.getType().isAir() || itemStack.getAmount() <= 0) {
+            return null;
+        }
+        return itemStack.clone();
     }
 
     private void closeByVictimId(UUID victimId, boolean notify, String messagePath) {

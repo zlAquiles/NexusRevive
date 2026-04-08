@@ -6,6 +6,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
@@ -14,6 +15,7 @@ import org.bukkit.event.entity.EntityToggleGlideEvent;
 import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.entity.EntityToggleSwimEvent;
 import org.bukkit.event.inventory.ClickType;
+import org.bukkit.event.inventory.CraftItemEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.inventory.InventoryType;
@@ -23,6 +25,7 @@ import org.bukkit.event.player.PlayerInteractAtEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.player.PlayerRecipeBookClickEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
@@ -137,6 +140,12 @@ public final class PlayerStateListener implements Listener {
 
     @EventHandler(ignoreCancelled = true)
     public void onInteract(PlayerInteractEvent event) {
+        if (plugin.getDownedService().isDowned(event.getPlayer())
+                && isArmorEquipInteractBlocked(event, plugin.getPluginSettings().downedInteractions())) {
+            event.setCancelled(true);
+            return;
+        }
+
         if (plugin.getDownedService().isDowned(event.getPlayer()) && !plugin.getPluginSettings().downedInteractions().allowInteract()) {
             event.setCancelled(true);
         }
@@ -205,12 +214,39 @@ public final class PlayerStateListener implements Listener {
 
         PluginSettings.DownedInteractions interactions = plugin.getPluginSettings().downedInteractions();
         for (int rawSlot : event.getRawSlots()) {
+            if (isCraftingRawSlot(event.getView().getType(), rawSlot) && !interactions.allowCraftingGrid()) {
+                event.setCancelled(true);
+                return;
+            }
+
             int playerSlot = translatePlayerSlot(event.getView().getType(), event.getView().getTopInventory().getSize(), rawSlot);
             if (playerSlot != -1 && !isPlayerSlotAllowed(playerSlot, interactions)) {
                 event.setCancelled(true);
                 return;
             }
         }
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onCraftItem(CraftItemEvent event) {
+        if (event.getWhoClicked() instanceof Player player
+                && plugin.getDownedService().isDowned(player)
+                && !plugin.getPluginSettings().downedInteractions().allowCraftingGrid()) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    @SuppressWarnings("removal")
+    public void onRecipeBookClick(PlayerRecipeBookClickEvent event) {
+        Player player = event.getPlayer();
+        if (!plugin.getDownedService().isDowned(player)
+                || plugin.getPluginSettings().downedInteractions().allowRecipeBook()) {
+            return;
+        }
+
+        plugin.getSchedulerFacade().runEntityLater(player, () -> revertRecipeBookCraft(player), () -> {
+        }, 1L);
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -227,16 +263,15 @@ public final class PlayerStateListener implements Listener {
             return;
         }
         String raw = event.getMessage().trim().toLowerCase();
-        if (raw.startsWith("/nexusrevive") || raw.startsWith("/nr")) {
-            return;
-        }
-
         String withoutSlash = raw.startsWith("/") ? raw.substring(1) : raw;
         if (withoutSlash.isBlank()) {
             return;
         }
 
         String commandLabel = withoutSlash.split("\\s+")[0];
+        if (commandLabel.equals("nexusrevive") || commandLabel.equals("nr")) {
+            return;
+        }
         PluginSettings.Commands commands = plugin.getPluginSettings().commands();
         boolean listed = commands.list().contains(commandLabel);
         boolean allowed = commands.mode() == PluginSettings.ListMode.WHITELIST ? listed : !listed;
@@ -286,6 +321,10 @@ public final class PlayerStateListener implements Listener {
             return true;
         }
 
+        if (isCraftingRawSlot(event.getView().getType(), event.getRawSlot()) && !interactions.allowCraftingGrid()) {
+            return true;
+        }
+
         if (event.getClick() == ClickType.SWAP_OFFHAND && !interactions.allowOffhand()) {
             return true;
         }
@@ -300,6 +339,61 @@ public final class PlayerStateListener implements Listener {
         }
 
         return event.isShiftClick() && wouldShiftIntoBlockedSlot(event.getCurrentItem(), interactions);
+    }
+
+    private boolean isCraftingRawSlot(InventoryType viewType, int rawSlot) {
+        return viewType == InventoryType.CRAFTING && rawSlot >= 0 && rawSlot <= 4;
+    }
+
+    private boolean isArmorEquipInteractBlocked(PlayerInteractEvent event, PluginSettings.DownedInteractions interactions) {
+        Action action = event.getAction();
+        if (action != Action.RIGHT_CLICK_AIR && action != Action.RIGHT_CLICK_BLOCK) {
+            return false;
+        }
+
+        ItemStack item = event.getItem();
+        if (item == null || item.getType().isAir()) {
+            return false;
+        }
+
+        EquipmentSlot slot = item.getType().getEquipmentSlot();
+        return isArmorEquipmentSlot(slot) && !isEquipmentSlotAllowed(slot, interactions);
+    }
+
+    private boolean isArmorEquipmentSlot(EquipmentSlot slot) {
+        return slot == EquipmentSlot.HEAD
+                || slot == EquipmentSlot.CHEST
+                || slot == EquipmentSlot.LEGS
+                || slot == EquipmentSlot.FEET;
+    }
+
+    private void revertRecipeBookCraft(Player player) {
+        if (!player.isOnline()
+                || !plugin.getDownedService().isDowned(player)
+                || plugin.getPluginSettings().downedInteractions().allowRecipeBook()
+                || player.getOpenInventory().getType() != InventoryType.CRAFTING) {
+            return;
+        }
+
+        var craftingInventory = player.getOpenInventory().getTopInventory();
+        craftingInventory.setItem(0, null);
+        for (int slot = 1; slot <= 4; slot++) {
+            ItemStack ingredient = craftingInventory.getItem(slot);
+            if (ingredient == null || ingredient.getType().isAir()) {
+                continue;
+            }
+
+            craftingInventory.setItem(slot, null);
+            var leftovers = player.getInventory().addItem(ingredient);
+            for (ItemStack leftover : leftovers.values()) {
+                if (leftover == null || leftover.getType().isAir()) {
+                    continue;
+                }
+                player.getWorld().dropItemNaturally(player.getLocation(), leftover);
+            }
+        }
+
+        player.updateInventory();
     }
 
     private int resolveClickedPlayerSlot(InventoryClickEvent event) {
@@ -349,12 +443,17 @@ public final class PlayerStateListener implements Listener {
         }
 
         EquipmentSlot equipmentSlot = item.getType().getEquipmentSlot();
-        return switch (equipmentSlot) {
-            case HEAD -> !interactions.allowHelmet();
-            case CHEST -> !interactions.allowChestplate();
-            case LEGS -> !interactions.allowLeggings();
-            case FEET -> !interactions.allowBoots();
-            default -> false;
+        return isArmorEquipmentSlot(equipmentSlot) && !isEquipmentSlotAllowed(equipmentSlot, interactions);
+    }
+
+    private boolean isEquipmentSlotAllowed(EquipmentSlot slot, PluginSettings.DownedInteractions interactions) {
+        return switch (slot) {
+            case HEAD -> interactions.allowHelmet();
+            case CHEST -> interactions.allowChestplate();
+            case LEGS -> interactions.allowLeggings();
+            case FEET -> interactions.allowBoots();
+            case OFF_HAND -> interactions.allowOffhand();
+            default -> interactions.allowInventory();
         };
     }
 }

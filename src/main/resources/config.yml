@@ -178,7 +178,6 @@ persistence:
 
 updater:
   # Check for updates on startup.
-  # The update URL is hardcoded in the plugin and cannot be edited here.
   enabled: true
 
 sounds:
@@ -299,6 +298,14 @@ downed-interactions:
   # Allow moving items in the main inventory and hotbar while downed.
   # This does not control offhand or armor slots.
   allow-inventory: false
+
+  # Allow using the personal 2x2 crafting grid and taking crafted results while downed.
+  # This controls the 4 crafting slots and the result slot in the player inventory.
+  allow-crafting-grid: false
+
+  # Allow using the recipe book while downed.
+  # If false, recipe-book crafting clicks are blocked.
+  allow-recipe-book: false
 
   # Allow using or swapping the offhand slot while downed.
   allow-offhand: false
@@ -430,6 +437,20 @@ hooks:
     # WeaponMechanics hook.
     # Improves attacker detection for custom weapon damage.
     enabled: true
+
+  vulcan:
+    # Vulcan hook.
+    enabled: true
+
+    # Ignore movement-related Vulcan flags while the player is downed.
+    # Useful to avoid false positives caused by the downed pose/crawl movement.
+    ignore-movement-checks-while-downed: true
+
+    # Cancel Vulcan setbacks while the player is downed.
+    cancel-setbacks-while-downed: true
+
+    # Cancel Vulcan punish events caused by movement checks while the player is downed.
+    cancel-punishments-while-downed: true
 
 scoreboard:
   # Show a personal NexusRevive scoreboard.

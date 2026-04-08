@@ -22,6 +22,7 @@ import com.aquiles.nexusrevive.service.GpsService;
 import com.aquiles.nexusrevive.service.LootService;
 import com.aquiles.nexusrevive.service.NmsPoseBroadcaster;
 import com.aquiles.nexusrevive.service.ScoreboardService;
+import com.aquiles.nexusrevive.service.VulcanHookService;
 import com.aquiles.nexusrevive.service.ZoneService;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -58,6 +59,7 @@ public final class NexusRevivePlugin extends JavaPlugin {
     private LootService lootService;
     private ScoreboardService scoreboardService;
     private CompatibilityService compatibilityService;
+    private VulcanHookService vulcanHookService;
     private EventActionsService eventActionsService;
     private NmsPoseBroadcaster nmsPoseBroadcaster;
     private DownedPoseAdapter downedPoseAdapter;
@@ -101,6 +103,9 @@ public final class NexusRevivePlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new GpsMenuListener(this), this);
         getServer().getPluginManager().registerEvents(new LootListener(this), this);
         getServer().getPluginManager().registerEvents(new ZoneSelectionListener(this), this);
+
+        this.vulcanHookService = new VulcanHookService(this);
+        this.vulcanHookService.registerIfAvailable();
 
         registerPlaceholderExpansion();
         setupMetrics();

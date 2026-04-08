@@ -4,7 +4,7 @@ plugins {
 }
 
 group = "me.urano"
-version = "1.0.0"
+version = "1.0.4"
 
 repositories {
     mavenCentral()
@@ -47,6 +47,7 @@ tasks.build {
 
 tasks.processResources {
     filteringCharset = "UTF-8"
+    inputs.property("pluginVersion", project.version)
     filesMatching("plugin.yml") {
         expand(
                 "version": project.version

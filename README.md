@@ -1,5 +1,5 @@
 # NexusRevive
-### Modern downed, revive, carry, loot, GPS, and zone system
+### Modern downed, revive, carry, loot, GPS, and zone system.
 
 **Compatibility:** `1.19.4` to `26.1+` on **Paper**, **Folia**, and modern forks
 

@@ -360,7 +360,7 @@ hooks:
 
   worldguard:
     # WorldGuard hook.
-    enabled: true
+    enabled: false
 
     # NexusRevive registers these region flags:
     # nexus-revive
@@ -387,7 +387,7 @@ hooks:
 
   deluxecombat:
     # DeluxeCombat hook.
-    enabled: true
+    enabled: false
 
     # Allow reviving while one of the players is in combat.
     allow-revive-in-combat: true
@@ -400,7 +400,7 @@ hooks:
 
   cmi:
     # CMI hook.
-    enabled: true
+    enabled: false
 
     # Prevent players protected by CMI god mode from being downed.
     respect-god-mode: true
@@ -411,7 +411,7 @@ hooks:
 
   essentials:
     # EssentialsX hook.
-    enabled: true
+    enabled: false
 
     # Prevent players protected by Essentials god mode from being downed.
     respect-god-mode: true
@@ -422,7 +422,7 @@ hooks:
 
   supervanish:
     # SuperVanish hook.
-    enabled: true
+    enabled: false
 
     # Hide vanished SuperVanish players from GPS and downed interactions
     # unless the viewer can already see them.
@@ -431,16 +431,16 @@ hooks:
   qualityarmory:
     # QualityArmory hook.
     # Improves attacker detection for non-vanilla weapon damage.
-    enabled: true
+    enabled: false
 
   weaponmechanics:
     # WeaponMechanics hook.
     # Improves attacker detection for custom weapon damage.
-    enabled: true
+    enabled: false
 
   vulcan:
     # Vulcan hook.
-    enabled: true
+    enabled: false
 
     # Ignore movement-related Vulcan flags while the player is downed.
     # Useful to avoid false positives caused by the downed pose/crawl movement.

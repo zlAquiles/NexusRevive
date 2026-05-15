@@ -44,7 +44,8 @@ public final class NmsAdapterResolver {
     private static boolean is26CompatVersion(String minecraftVersion) {
         return minecraftVersion.equals("26.1")
                 || minecraftVersion.equals("26.1.0")
-                || minecraftVersion.equals("26.1.1");
+                || minecraftVersion.equals("26.1.1")
+                || minecraftVersion.equals("26.1.2");
     }
 }
 
